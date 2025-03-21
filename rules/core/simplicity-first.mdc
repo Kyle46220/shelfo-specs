@@ -1,0 +1,249 @@
+---
+description: Core principle of maintaining simplicity throughout the project
+globs: **/*.ts, **/*.tsx, **/*.js, **/*.jsx
+alwaysApply: true
+---
+# Simplicity-First Principle
+
+## Overview
+The simplicity-first principle guides all development decisions in the Shelfo configurator project. This rule ensures that implementations remain straightforward, maintainable, and accessible for junior developers.
+
+## Core Guidelines
+
+### Code Structure
+```typescript
+// GOOD: Simple, focused component with clear purpose
+function ProductCard({ product, onSelect }) {
+  return (
+    <div className="card" onClick={() => onSelect(product.id)}>
+      <img src={product.image} alt={product.name} />
+      <h3>{product.name}</h3>
+      <p>{product.description}</p>
+    </div>
+  );
+}
+
+// BAD: Overly complex component with multiple responsibilities
+function ProductCardComplex({ product, onSelect, onFavorite, inventory, user, analytics }) {
+  const [expanded, setExpanded] = useState(false);
+  const stockStatus = useMemo(() => calculateStockStatus(inventory, product), [inventory, product]);
+  
+  useEffect(() => {
+    analytics.trackView(product.id, user.id);
+  }, []);
+  
+  const handleExpand = () => {
+    setExpanded(!expanded);
+    analytics.trackExpand(product.id);
+  };
+  
+  return (
+    <div className="card">
+      <div className="card-header">
+        <img src={product.image} alt={product.name} />
+        <button onClick={() => onFavorite(product.id)}>❤️</button>
+      </div>
+      <h3 onClick={handleExpand}>{product.name}</h3>
+      {expanded && <p>{product.description}</p>}
+      <div className="card-footer">
+        <span>{stockStatus}</span>
+        <button onClick={() => onSelect(product.id)}>Select</button>
+      </div>
+    </div>
+  );
+}
+```
+
+### State Management
+```typescript
+// GOOD: Simple, flat state structure
+const configuratorStore = proxy({
+  // Core state
+  productType: null,
+  dimensions: { width: 800, height: 1200, depth: 400 },
+  material: 'wood',
+  color: 'natural',
+  
+  // UI state
+  activeTab: 'dimensions',
+  
+  // Actions
+  actions: {
+    setDimensions(dimensions) {
+      configuratorStore.dimensions = { ...configuratorStore.dimensions, ...dimensions };
+    },
+    setMaterial(material) {
+      configuratorStore.material = material;
+    }
+  }
+});
+
+// BAD: Overly nested, complex state
+const complexStore = proxy({
+  configuration: {
+    product: {
+      type: null,
+      metadata: {
+        lastUpdated: null,
+        version: '1.0',
+      },
+      dimensions: {
+        current: { width: 800, height: 1200, depth: 400 },
+        previous: null,
+        constraints: {
+          min: { width: 400, height: 600, depth: 200 },
+          max: { width: 2400, height: 2400, depth: 600 },
+        }
+      },
+      appearance: {
+        materials: {
+          primary: 'wood',
+          secondary: null,
+          accent: null
+        },
+        colors: {
+          primary: 'natural',
+          secondary: null,
+          accent: null
+        }
+      }
+    },
+    history: [],
+    validation: {
+      errors: [],
+      warnings: []
+    }
+  },
+  ui: {
+    navigation: {
+      activeTab: 'dimensions',
+      previousTab: null,
+      tabHistory: []
+    },
+    interaction: {
+      hoveredElement: null,
+      selectedElement: null,
+      dragState: null
+    }
+  }
+});
+```
+
+### Function Design
+```typescript
+// GOOD: Simple function with clear purpose
+function calculateShelfPositions(rowHeights, columnWidths) {
+  const positions = [];
+  let yPosition = 0;
+  
+  rowHeights.forEach((height, rowIndex) => {
+    let xPosition = 0;
+    
+    columnWidths.forEach((width, colIndex) => {
+      positions.push({
+        id: `shelf-${rowIndex}-${colIndex}`,
+        position: [xPosition, yPosition, 0],
+        dimensions: [width, 18, 400] // width, height, depth
+      });
+      
+      xPosition += width;
+    });
+    
+    yPosition += height;
+  });
+  
+  return positions;
+}
+
+// BAD: Overly complex function with too many responsibilities
+function calculateComplexShelfConfiguration(config, materials, pricing, constraints, history) {
+  // Complex implementation with many responsibilities and side effects
+  // ...
+}
+```
+
+### API Design
+```typescript
+// GOOD: Simple, focused API endpoint
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await db.getProducts();
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
+// BAD: Overly complex API with too many parameters and responsibilities
+app.get('/api/products', async (req, res) => {
+  const { 
+    category, 
+    subcategory, 
+    material, 
+    color, 
+    minPrice, 
+    maxPrice, 
+    sortBy, 
+    sortOrder, 
+    page, 
+    limit, 
+    includeMetadata, 
+    calculateStock, 
+    userPreferences 
+  } = req.query;
+  
+  // Complex implementation with many conditions and processing steps
+  // ...
+});
+```
+
+## Implementation Checklist
+
+### Component Design
+- [ ] Components have a single responsibility
+- [ ] Props are minimal and focused
+- [ ] Component nesting is limited to 3 levels or less
+- [ ] Complex logic is extracted to custom hooks
+- [ ] Components are under 100 lines of code
+
+### State Management
+- [ ] State structure is flat and simple
+- [ ] Derived state is computed, not stored
+- [ ] State updates are straightforward and predictable
+- [ ] Global state is limited to what's truly needed globally
+- [ ] Local component state is used for UI-specific concerns
+
+### API Design
+- [ ] Endpoints have clear, focused purposes
+- [ ] Query parameters are minimal and essential
+- [ ] Response structures are consistent and predictable
+- [ ] Error handling is straightforward
+- [ ] Authentication is simple and secure
+
+### Performance Considerations
+- [ ] Initial load prioritizes essential content
+- [ ] Optimizations are added only when needed
+- [ ] Complex calculations are memoized
+- [ ] Large data is paginated or virtualized
+- [ ] Assets are optimized for size
+
+## Decision Making Framework
+When faced with implementation choices, follow this decision framework:
+
+1. **Simplest Solution First**: Start with the simplest solution that meets requirements
+2. **Measure Before Optimizing**: Only add complexity for proven performance issues
+3. **Readability Over Cleverness**: Choose readable code over clever solutions
+4. **Fewer Dependencies**: Minimize external dependencies
+5. **Standard Patterns**: Use familiar patterns over custom solutions
+
+## Simplicity Evaluation Questions
+Before committing code, ask:
+
+1. Could a junior developer understand this code?
+2. Can this be explained in one sentence?
+3. Is there a simpler way to achieve the same result?
+4. Does every part of this code serve a clear purpose?
+5. Would removing any part break essential functionality?
+
+## Remember
+"Everything should be made as simple as possible, but no simpler."

@@ -1,12 +1,12 @@
-# Shelfo Supabase Storefront Specifications
+# Shelfo 3D Furniture Configurator Specifications
 
 ## Overview
-This document serves as the master specification for the Shelfo storefront with 3D configurator. It provides a comprehensive overview of all features, technical requirements, and business constraints for the MVP.
+This document serves as the master specification for the Shelfo 3D furniture configurator. It provides a comprehensive overview of all features, technical requirements, and business constraints for the MVP.
 
 ## Core Features
 
 ### 1. 3D Product Configurator
-- Interactive 3D visualization of configurable products
+- Interactive 3D visualization of configurable furniture products
 - Real-time rendering of configuration changes
 - Support for multiple product types (bookcase, table, desk, console) using a flexible type system
 - Component-based architecture for product composition
@@ -23,12 +23,12 @@ This document serves as the master specification for the Shelfo storefront with 
 - Pre-defined product configurations for quick selection
 - Gallery view of available presets
 - Ability to customize from preset starting points
-- User-saved configurations stored in Supabase
+- User-saved configurations
 - Collection-based organization of presets
 
-### 4. Supabase Integration
+### 4. Backend Integration
 - Frontend-based pricing calculation with product-type aware formulas
-- Configurator state stored in Supabase
+- Configurator state persistence
 - User authentication and saved configurations
 - Order history with configuration details
 
@@ -37,12 +37,13 @@ This document serves as the master specification for the Shelfo storefront with 
 ### Frontend
 - Next.js 15 App Router for routing and server components
 - React Three Fiber for 3D visualization
-- Valtio for state management (migrated from Zustand)
+- Valtio for state management
 - TypeScript for type safety with discriminated union patterns
 - Tailwind CSS for styling
+- Shadcn components for UI elements
 
 ### Backend
-- Supabase for database and authentication
+- Simple backend with RESTful API endpoints
 - JSON-based pricing system with frontend calculation
 - Persistent configuration storage
 - User profiles and authentication
@@ -78,7 +79,7 @@ This document serves as the master specification for the Shelfo storefront with 
 - 3D model performance on mobile devices
 - WebGL compatibility across browsers
 - State management complexity with polymorphic product types
-- Supabase database structure for product configurations
+- Database structure for product configurations
 
 ## Performance Targets
 - Initial load: < 3s on desktop, < 5s on mobile
@@ -89,16 +90,18 @@ This document serves as the master specification for the Shelfo storefront with 
 ## References
 - [Product Type System](./architecture/product-type-system.specs.md)
 - [Component-Based Architecture](./architecture/component-based-architecture.specs.md)
-- [Bookcase Configuration](./configurator/bookcase-configuration-specs.md)
-- [Table Configuration](./configurator/table-configuration-specs.md)
-- [Row Height Adjustment](./configurator/row-height-adjustment-specs.md)
-- [Preset Selection](./configurator/preset-selection-specs.md)
-- [3D Visualization](./configurator/3d-visualization-specs.md)
-- [Cart Integration](./cart-checkout/configurator-cart-integration.specs.md)
+- [Bookcase Configuration](./configurator/bookcase-configuration.specs.md)
+- [Table Configuration](./configurator/table-configuration.specs.md)
+- [Row Height Adjustment](./configurator/row-height-adjustment.specs.md)
+- [Preset Selection](./configurator/preset-selection.specs.md)
+- [3D Visualization](./configurator/3d-visualization.specs.md)
+- [Cart Integration](./integration/cart-integration.specs.md)
 - [Product Registry System](./architecture/product-registry-system.specs.md)
-- [Supabase Integration](./integration/supabase-integration.specs.md)
+- [Backend Integration](./integration/backend-integration.specs.md)
 - [Pricing System](./integration/pricing-system.specs.md)
-- [Business Requirements](./business-requirements.md)
+- [Business Requirements](./business-requirements.specs.md)
+- [State Management](./state-management/valtio-state.specs.md)
+- [UI Components](./ui/ui-components.specs.md)
 
 ## Success Criteria
 The MVP will be considered successful when:
@@ -108,4 +111,4 @@ The MVP will be considered successful when:
 4. The system enforces all manufacturing constraints
 5. The 3D visualization accurately represents the final product
 6. Mobile users can use all configurator features
-7. User configurations can be saved to their account
+7. User configurations can be saved and retrieved

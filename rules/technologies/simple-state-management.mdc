@@ -1,0 +1,372 @@
+---
+description: Guidelines for implementing simple and effective state management with Valtio
+globs: **/store/**/*.ts, **/store/**/*.js, **/state/**/*.ts, **/state/**/*.js
+alwaysApply: true
+---
+# Simple State Management Guidelines
+
+## Overview
+These guidelines ensure state management with Valtio remains simple, predictable, and maintainable while providing reactive updates for the UI.
+
+## Store Structure
+
+### Flat Store Design
+```typescript
+// GOOD: Simple, flat store structure
+import { proxy } from 'valtio';
+
+const configuratorStore = proxy({
+  // Core state
+  productType: 'cabinet',
+  dimensions: { width: 800, height: 1200, depth: 400 },
+  material: 'wood',
+  color: 'natural',
+  
+  // UI state
+  ui: {
+    activeTab: 'dimensions',
+    selectedComponent: null,
+    hoveredComponent: null,
+  },
+  
+  // Actions
+  actions: {
+    setDimensions(dimensions) {
+      configuratorStore.dimensions = { ...configuratorStore.dimensions, ...dimensions };
+    },
+    setMaterial(material) {
+      configuratorStore.material = material;
+    },
+    setColor(color) {
+      configuratorStore.color = color;
+    },
+    selectComponent(id) {
+      configuratorStore.ui.selectedComponent = id;
+    }
+  }
+});
+
+// BAD: Deeply nested store structure
+const complexStore = proxy({
+  configuration: {
+    product: {
+      type: 'cabinet',
+      metadata: {
+        lastUpdated: null,
+        version: '1.0',
+      },
+      dimensions: {
+        current: { width: 800, height: 1200, depth: 400 },
+        previous: null,
+        constraints: {
+          min: { width: 400, height: 600, depth: 200 },
+          max: { width: 2400, height: 2400, depth: 600 },
+        }
+      },
+      appearance: {
+        materials: {
+          primary: 'wood',
+          secondary: null,
+          accent: null
+        },
+        colors: {
+          primary: 'natural',
+          secondary: null,
+          accent: null
+        }
+      }
+    },
+    // More nested state...
+  }
+});
+```
+
+### Non-Reactive Data
+```typescript
+// GOOD: Using ref for non-reactive data
+import { proxy, ref } from 'valtio';
+
+const configuratorStore = proxy({
+  // Reactive state
+  selectedPresetId: null,
+  
+  // Non-reactive reference data
+  presets: ref([
+    { id: 'preset1', name: 'Modern Bookcase', thumbnail: '/thumbnails/preset1.jpg' },
+    { id: 'preset2', name: 'Classic Cabinet', thumbnail: '/thumbnails/preset2.jpg' },
+    { id: 'preset3', name: 'Minimalist Shelf', thumbnail: '/thumbnails/preset3.jpg' }
+  ]),
+  
+  // Actions
+  actions: {
+    selectPreset(id) {
+      configuratorStore.selectedPresetId = id;
+    }
+  }
+});
+
+// BAD: Making everything reactive
+const inefficientStore = proxy({
+  // Everything is reactive, even static reference data
+  presets: [
+    { id: 'preset1', name: 'Modern Bookcase', thumbnail: '/thumbnails/preset1.jpg' },
+    { id: 'preset2', name: 'Classic Cabinet', thumbnail: '/thumbnails/preset2.jpg' },
+    { id: 'preset3', name: 'Minimalist Shelf', thumbnail: '/thumbnails/preset3.jpg' }
+  ]
+});
+```
+
+## Derived State
+
+### Simple Derived State
+```typescript
+// GOOD: Using derive for computed values
+import { proxy } from 'valtio';
+import { derive } from 'valtio/utils';
+
+const configuratorStore = proxy({
+  dimensions: { width: 800, height: 1200, depth: 400 },
+  material: 'wood',
+  materialPrices: {
+    'wood': 1,
+    'metal': 2.5,
+    'glass': 3
+  },
+  basePricePerCubicMeter: 100
+});
+
+// Derived state calculated from base state
+const derivedState = derive({
+  volume: (get) => {
+    const dim = get(configuratorStore).dimensions;
+    return (dim.width * dim.height * dim.depth) / 1000000; // Convert to cubic meters
+  },
+  materialPrice: (get) => {
+    const store = get(configuratorStore);
+    return store.materialPrices[store.material] || 1;
+  },
+  totalPrice: (get) => {
+    const store = get(configuratorStore);
+    const volume = get(derivedState).volume;
+    const materialPrice = get(derivedState).materialPrice;
+    return Math.round(volume * store.basePricePerCubicMeter * materialPrice);
+  }
+});
+
+// BAD: Storing derived values in the main state
+const inefficientStore = proxy({
+  dimensions: { width: 800, height: 1200, depth: 400 },
+  material: 'wood',
+  materialPrices: {
+    'wood': 1,
+    'metal': 2.5,
+    'glass': 3
+  },
+  basePricePerCubicMeter: 100,
+  
+  // These should be derived, not stored
+  volume: 0.384,
+  materialPrice: 1,
+  totalPrice: 38.4,
+  
+  // Action that needs to update all derived values
+  actions: {
+    updateDimensions(dimensions) {
+      inefficientStore.dimensions = { ...inefficientStore.dimensions, ...dimensions };
+      
+      // Need to manually recalculate all derived values
+      const dim = inefficientStore.dimensions;
+      inefficientStore.volume = (dim.width * dim.height * dim.depth) / 1000000;
+      inefficientStore.materialPrice = inefficientStore.materialPrices[inefficientStore.material] || 1;
+      inefficientStore.totalPrice = Math.round(
+        inefficientStore.volume * inefficientStore.basePricePerCubicMeter * inefficientStore.materialPrice
+      );
+    }
+  }
+});
+```
+
+## Store Actions
+
+### Simple Action Design
+```typescript
+// GOOD: Simple, focused actions
+const configuratorStore = proxy({
+  productType: 'cabinet',
+  dimensions: { width: 800, height: 1200, depth: 400 },
+  
+  actions: {
+    // Simple action that does one thing
+    setProductType(type) {
+      configuratorStore.productType = type;
+    },
+    
+    // Action with simple parameter handling
+    updateDimensions(dimensions) {
+      configuratorStore.dimensions = { 
+        ...configuratorStore.dimensions, 
+        ...dimensions 
+      };
+    }
+  }
+});
+
+// BAD: Complex actions with multiple responsibilities
+const complexStore = proxy({
+  // State properties...
+  
+  actions: {
+    // Action that does too many things
+    processConfiguration(config, options) {
+      // Validate configuration
+      if (!this.validateConfiguration(config)) {
+        throw new Error('Invalid configuration');
+      }
+      
+      // Update product type
+      complexStore.productType = config.type;
+      
+      // Update dimensions with constraints
+      const dimensions = this.constrainDimensions(config.dimensions);
+      complexStore.dimensions = dimensions;
+      
+      // Update materials
+      complexStore.materials.primary = config.materials.primary;
+      complexStore.materials.secondary = config.materials.secondary;
+      
+      // Calculate price
+      const price = this.calculatePrice(dimensions, complexStore.materials);
+      complexStore.price = price;
+      
+      // Update history
+      complexStore.history.push({
+        timestamp: new Date().toISOString(),
+        configuration: { ...config },
+        price
+      });
+      
+      // Trigger side effects
+      if (options.saveToServer) {
+        this.saveToServer(config, price);
+      }
+      
+      if (options.notifyUser) {
+        this.notifyUser('Configuration updated');
+      }
+    },
+    
+    // Helper methods...
+    validateConfiguration(config) { /* ... */ },
+    constrainDimensions(dimensions) { /* ... */ },
+    calculatePrice(dimensions, materials) { /* ... */ },
+    saveToServer(config, price) { /* ... */ },
+    notifyUser(message) { /* ... */ }
+  }
+});
+```
+
+## Store Usage
+
+### Simple Component Integration
+```typescript
+// GOOD: Simple component with store integration
+import { useSnapshot } from 'valtio';
+import { configuratorStore } from '../store';
+
+function DimensionsPanel() {
+  // Get reactive snapshot of the store
+  const snap = useSnapshot(configuratorStore);
+  
+  // Handle dimension change
+  const handleWidthChange = (width) => {
+    configuratorStore.actions.updateDimensions({ width });
+  };
+  
+  return (
+    <div>
+      <h3>Dimensions</h3>
+      <div>
+        <label>Width: {snap.dimensions.width}mm</label>
+        <input
+          type="range"
+          min="300"
+          max="2400"
+          value={snap.dimensions.width}
+          onChange={(e) => handleWidthChange(parseInt(e.target.value))}
+        />
+      </div>
+      {/* Similar controls for height and depth */}
+    </div>
+  );
+}
+
+// BAD: Complex component with inefficient store usage
+function ComplexDimensionsPanel() {
+  // Get multiple snapshots or access store directly
+  const dimensions = useSnapshot(complexStore.configuration.product.dimensions.current);
+  const constraints = useSnapshot(complexStore.configuration.product.dimensions.constraints);
+  
+  // Complex event handling with multiple store updates
+  // ...
+}
+```
+
+### Simple Store Initialization
+```typescript
+// GOOD: Simple store initialization
+function ConfiguratorProvider({ children }) {
+  // Initialize store on mount
+  useEffect(() => {
+    // Load default product type
+    configuratorStore.actions.setProductType('cabinet');
+    
+    // Set default dimensions
+    configuratorStore.actions.updateDimensions({
+      width: 800,
+      height: 1200,
+      depth: 400
+    });
+  }, []);
+  
+  return children;
+}
+
+// BAD: Complex initialization with many dependencies
+function ComplexProvider({ children }) {
+  // Complex initialization with many dependencies and side effects
+  // ...
+}
+```
+
+## Implementation Checklist
+
+### Store Design
+- [ ] Store structure is flat and simple
+- [ ] State is organized by domain (UI state, product state, etc.)
+- [ ] Non-reactive data uses `ref`
+- [ ] Derived values use `derive` instead of being stored
+- [ ] Store is initialized with sensible defaults
+
+### Actions
+- [ ] Actions have clear, focused responsibilities
+- [ ] Actions are named descriptively
+- [ ] Actions handle parameter validation
+- [ ] Actions avoid side effects when possible
+- [ ] Actions are attached to the store object
+
+### Component Integration
+- [ ] Components use `useSnapshot` to access store
+- [ ] Components only subscribe to the state they need
+- [ ] Components don't directly modify store (use actions instead)
+- [ ] Form inputs are controlled by store values
+- [ ] UI updates reflect store changes immediately
+
+### Performance
+- [ ] Large arrays and objects use `ref`
+- [ ] Components avoid unnecessary re-renders
+- [ ] Derived calculations are memoized
+- [ ] Store updates are batched when appropriate
+- [ ] Heavy computations are moved outside the render cycle
+
+## Remember
+"The simplest state management is the one that's easiest to reason about."

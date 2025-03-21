@@ -1,0 +1,300 @@
+---
+description: Guidelines for implementing a simple and effective backend integration
+globs: **/api/**/*.ts, **/api/**/*.js, **/services/**/*.ts, **/services/**/*.js
+alwaysApply: true
+---
+# Simple Backend Integration Guidelines
+
+## Overview
+These guidelines ensure the backend integration remains simple, maintainable, and effective without unnecessary complexity.
+
+## API Design
+
+### RESTful Endpoints
+```typescript
+// GOOD: Simple, resource-focused endpoints
+// GET /api/configurations - List all configurations
+// GET /api/configurations/:id - Get a specific configuration
+// POST /api/configurations - Create a new configuration
+// PUT /api/configurations/:id - Update a configuration
+// DELETE /api/configurations/:id - Delete a configuration
+
+// BAD: Complex, action-based endpoints
+// POST /api/process-configuration-and-calculate-price
+// GET /api/get-configurations-with-related-products-and-pricing
+```
+
+### Request/Response Structure
+```typescript
+// GOOD: Simple, consistent response structure
+{
+  "success": true,
+  "data": {
+    "id": "conf-123",
+    "name": "My Bookcase",
+    "dimensions": {
+      "width": 800,
+      "height": 1200,
+      "depth": 400
+    }
+  }
+}
+
+// Error response
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Width must be between 300 and 2400"
+  }
+}
+
+// BAD: Inconsistent, overly nested response
+{
+  "status": "ok",
+  "result": {
+    "configuration": {
+      "configData": {
+        "id": "conf-123",
+        "configName": "My Bookcase",
+        "dimensionData": {
+          "w": 800,
+          "h": 1200,
+          "d": 400
+        }
+      }
+    }
+  },
+  "metadata": {
+    "timestamp": "2025-03-21T11:14:20Z"
+  }
+}
+```
+
+## Data Access
+
+### Simple Repository Pattern
+```typescript
+// GOOD: Simple repository with clear methods
+class ConfigurationRepository {
+  async findAll(userId: string): Promise<Configuration[]> {
+    return db.query('SELECT * FROM configurations WHERE user_id = $1', [userId]);
+  }
+  
+  async findById(id: string, userId: string): Promise<Configuration | null> {
+    return db.queryOne('SELECT * FROM configurations WHERE id = $1 AND user_id = $2', [id, userId]);
+  }
+  
+  async create(data: ConfigurationData, userId: string): Promise<Configuration> {
+    return db.queryOne(
+      'INSERT INTO configurations (id, user_id, name, data) VALUES ($1, $2, $3, $4) RETURNING *',
+      [generateId(), userId, data.name, JSON.stringify(data)]
+    );
+  }
+  
+  async update(id: string, data: Partial<ConfigurationData>, userId: string): Promise<Configuration | null> {
+    // Simple update implementation
+  }
+  
+  async delete(id: string, userId: string): Promise<boolean> {
+    const result = await db.execute('DELETE FROM configurations WHERE id = $1 AND user_id = $2', [id, userId]);
+    return result.rowCount > 0;
+  }
+}
+
+// BAD: Overly complex repository with unnecessary abstraction
+class ComplexConfigurationRepository extends BaseRepository<Configuration> implements IConfigurationRepository {
+  // Complex implementation with many layers of abstraction
+}
+```
+
+### Simple Service Layer
+```typescript
+// GOOD: Simple service with clear responsibilities
+class ConfigurationService {
+  constructor(private repository: ConfigurationRepository) {}
+  
+  async getUserConfigurations(userId: string): Promise<Configuration[]> {
+    return this.repository.findAll(userId);
+  }
+  
+  async getConfiguration(id: string, userId: string): Promise<Configuration | null> {
+    return this.repository.findById(id, userId);
+  }
+  
+  async saveConfiguration(data: ConfigurationData, userId: string): Promise<Configuration> {
+    // Validate data
+    this.validateConfiguration(data);
+    
+    // Calculate price
+    const price = await this.calculatePrice(data);
+    
+    // Save configuration
+    return this.repository.create({
+      ...data,
+      calculatedPrice: price
+    }, userId);
+  }
+  
+  private validateConfiguration(data: ConfigurationData): void {
+    // Simple validation logic
+  }
+  
+  private async calculatePrice(data: ConfigurationData): Promise<number> {
+    // Simple pricing calculation
+    return 100; // Placeholder
+  }
+}
+
+// BAD: Overly complex service with too many dependencies
+class ComplexConfigurationService {
+  constructor(
+    private repository: IConfigurationRepository,
+    private userService: IUserService,
+    private pricingService: IPricingService,
+    private inventoryService: IInventoryService,
+    private notificationService: INotificationService,
+    private loggingService: ILoggingService,
+    private cacheService: ICacheService
+  ) {}
+  
+  // Complex implementation with many dependencies and side effects
+}
+```
+
+## Authentication
+
+### Simple JWT Authentication
+```typescript
+// GOOD: Simple JWT authentication
+function authenticate(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      }
+    });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Invalid or expired token'
+      }
+    });
+  }
+}
+
+// BAD: Complex authentication with multiple strategies and roles
+function complexAuthenticate(req, res, next) {
+  // Complex implementation with multiple strategies, roles, and permissions
+}
+```
+
+## Error Handling
+
+### Simple Error Handling
+```typescript
+// GOOD: Simple, consistent error handling
+app.use((err, req, res, next) => {
+  console.error(err);
+  
+  const statusCode = err.statusCode || 500;
+  const errorCode = err.code || 'SERVER_ERROR';
+  const message = err.message || 'An unexpected error occurred';
+  
+  res.status(statusCode).json({
+    success: false,
+    error: {
+      code: errorCode,
+      message
+    }
+  });
+});
+
+// Application error class
+class AppError extends Error {
+  constructor(message, code = 'SERVER_ERROR', statusCode = 500) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+// Usage
+if (!product) {
+  throw new AppError('Product not found', 'NOT_FOUND', 404);
+}
+
+// BAD: Inconsistent error handling with different formats
+// Various inconsistent error handling approaches throughout the application
+```
+
+## Database Schema
+
+### Simple Schema Design
+```sql
+-- GOOD: Simple, focused tables
+CREATE TABLE configurations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  data JSONB NOT NULL,
+  calculated_price DECIMAL NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- BAD: Overly normalized tables with many relationships
+-- Complex schema with many tables and relationships
+```
+
+## Implementation Checklist
+
+### API Design
+- [ ] Endpoints follow RESTful conventions
+- [ ] URL paths are resource-focused, not action-focused
+- [ ] Response structure is consistent across all endpoints
+- [ ] Error responses follow a standard format
+- [ ] Query parameters are minimal and essential
+
+### Data Access
+- [ ] Repository methods are clear and focused
+- [ ] Service layer has clear responsibilities
+- [ ] Database queries are simple and efficient
+- [ ] Abstractions are minimal and valuable
+- [ ] Data validation is straightforward
+
+### Authentication
+- [ ] Authentication flow is simple and secure
+- [ ] Token handling is consistent
+- [ ] Error messages are clear but don't reveal sensitive information
+- [ ] Authentication middleware is focused and reusable
+- [ ] Environment variables are used for secrets
+
+### Error Handling
+- [ ] Error handling is consistent across the application
+- [ ] Error responses include useful information for debugging
+- [ ] Custom error classes are simple and focused
+- [ ] Error logging captures necessary context
+- [ ] Sensitive information is never exposed in errors
+
+### Database
+- [ ] Schema design is simple and focused
+- [ ] Indexes are created for frequently queried fields
+- [ ] JSON is used for flexible data structures
+- [ ] Transactions are used for operations that modify multiple records
+- [ ] Migrations are simple and reversible
+
+## Remember
+"A simple backend that works reliably is better than a complex one that's hard to maintain."

@@ -1,188 +1,82 @@
-# Product Type System Specification
+# Product Type System Specifications
 
 ## Overview
-The product type system provides a flexible, extensible architecture for defining different furniture products in the Shelfo configurator. Using TypeScript's discriminated union pattern, it enables a clean separation of concerns while maintaining type safety and providing a unified API for the configurator's core functionality.
+This document specifies the type system for the Shelfo furniture configurator. The product type system provides a flexible, extensible foundation for defining different furniture products while maintaining type safety and enabling shared functionality.
 
-## Business Purpose
-- Enable the configurator to support multiple furniture types (cabinets, tables, desks, consoles)
-- Allow non-technical staff to define new product types without code changes
-- Ensure type safety throughout the application
-- Simplify the addition of new product features and options
+## Core Concepts
 
-## Architecture
-
-### Base Types and Common Interfaces
+### Product Type Hierarchy
+The product type system uses TypeScript's discriminated union pattern to create a type-safe hierarchy of product types:
 
 ```typescript
-// Basic types for product configuration
-export type Material = 'wood' | 'plywood' | 'matte' | 'gloss' | 'veneer';
-export type Color = 'white' | 'black' | 'grey' | 'blue' | 'red' | 'green' | 'oak' | 'walnut' | 'beige' | 'navy' | 'burgundy' | 'sage' | 'pink';
-export type ProductTypeName = 'cabinet' | 'table' | 'desk' | 'bookcase' | 'console';
-
-// Common interfaces for positioning and dimensions
-export interface Position3D {
-  x: number;
-  y: number;
-  z: number;
-}
-
-export interface Dimensions {
-  width: number;
-  height: number;
-  depth: number;
-}
-```
-
-### Component-Based Architecture
-
-The core of the system is a component-based architecture where each product is composed of various components:
-
-```typescript
-// Common Base Component Interface
-export interface ProductComponent {
-  id: string;
-  type: string;
-  position: Position3D;
-  dimensions: Dimensions;
-  material: Material;
-  color: Color;
-  visible: boolean;
-}
-
-// Specific Component Types
-export interface Divider extends ProductComponent {
-  type: 'divider';
-}
-
-export interface Shelf extends ProductComponent {
-  type: 'shelf';
-  hasVoid: boolean;
-  voidPosition?: Position2D;
-  voidSize?: { width: number; depth: number };
-}
-
-export interface Leg extends ProductComponent {
-  type: 'leg';
-  style: LegStyle;
-  diameter?: number; // For round legs
-}
-
-export interface Tabletop extends ProductComponent {
-  type: 'tabletop';
-  shape: 'rectangular' | 'round' | 'oval';
-  thickness: number;
-}
-
-// Additional component types as needed
-```
-
-### Product Type System
-
-The product type system uses a base interface with type-specific extensions:
-
-```typescript
-// Generic Product Type Base
+// Base product type interface
 export interface ProductTypeBase {
   id: string;
   name: string;
-  typeName: ProductTypeName;
-  modelPath: string;
+  type: ProductTypeName;
+  description: string;
+  thumbnail: string;
   defaultDimensions: Dimensions;
   minDimensions: Dimensions;
   maxDimensions: Dimensions;
   availableMaterials: Material[];
   availableColors: Color[];
-  availableAccessories: string[];
-  defaultMaterialGroups: MaterialGroup[];
 }
 
-// Cabinet/Bookcase Product Type
-export interface CabinetProductType extends ProductTypeBase {
-  typeName: 'cabinet' | 'bookcase';
-  orientation: 'row' | 'column';
-  availableStyles: StyleType[];
-  availableBases: BaseType[];
-  defaultRowHeight: number;
-  rowHeightOptions: number[];
-  defaultDividerDensity: number;
-  
-  // Cabinet-specific construction rules
-  cabinetConstructionRules: {
-    increaseHeight: (currentHeight: number, rowHeight: number) => number;
-    increaseWidth: (currentWidth: number, increment: number) => number;
-    positionDividers: (width: number, height: number, density: number, style: StyleType) => Divider[];
-    positionShelves: (width: number, height: number, rowHeight: number) => Shelf[];
-    createCompartments: (dividers: Divider[], shelves: Shelf[]) => Compartment[];
-    positionBase: (width: number, depth: number, baseType: BaseType, dividers: Divider[]) => ProductComponent[];
-  };
-}
-
-// Table Product Type
-export interface TableProductType extends ProductTypeBase {
-  typeName: 'table' | 'desk';
-  availableLegStyles: LegStyle[];
-  defaultTableTopThickness: number;
-  tableTopThicknessOptions: number[];
-  
-  // Table-specific construction rules
-  tableConstructionRules: {
-    createTabletop: (width: number, depth: number, thickness: number) => Tabletop;
-    positionLegs: (width: number, depth: number, style: LegStyle) => Leg[];
-    addBracing: (legs: Leg[], tabletop: Tabletop) => ProductComponent[];
-  };
-}
-
-// Union type for all product types
+// Product type discriminated union
 export type ProductType = 
   | { type: 'cabinet'; config: CabinetProductType }
   | { type: 'table'; config: TableProductType }
+  | { type: 'desk'; config: DeskProductType }
   | { type: 'console'; config: ConsoleProductType };
+
+// Type name enumeration
+export type ProductTypeName = 'cabinet' | 'table' | 'desk' | 'console';
 ```
 
-### Presets System
-
-Presets work with the type system to provide pre-configured product instances:
+### Type-Specific Configurations
+Each product type has its own configuration interface that extends the base type:
 
 ```typescript
-// Base preset interface with common properties
-export interface PresetBase {
-  id: string;
-  name: string;
-  description: string;
-  categoryId: string;
-  collectionId?: string;
-  collectionName?: string;
-  previewImagePath: string;
-  productTypeName: ProductTypeName;
-  baseDimensions: Dimensions;
-  materialGroups: MaterialGroup[];
-  accessories: Accessory[];
+// Cabinet product type
+export interface CabinetProductType extends ProductTypeBase {
+  type: 'cabinet';
+  maxRows: number;
+  maxColumns: number;
+  availableDividerPositions: DividerPosition[];
+  availableDoorTypes: DoorType[];
+  availableDrawerTypes: DrawerType[];
 }
 
-// Product-specific preset configurations using discriminated union
-export type ProductPreset = 
-  | (PresetBase & { productTypeName: 'cabinet' | 'bookcase'; configuration: CabinetPresetConfig })
-  | (PresetBase & { productTypeName: 'table' | 'desk'; configuration: TablePresetConfig })
-  | (PresetBase & { productTypeName: 'console'; configuration: ConsolePresetConfig });
+// Table product type
+export interface TableProductType extends ProductTypeBase {
+  type: 'table';
+  availableLegs: LegType[];
+  availableEdgeStyles: EdgeStyle[];
+  maxSupportSpan: number; // Maximum unsupported span in mm
+}
+
+// Additional product types follow the same pattern
 ```
 
-## Implementation Details
-
-### Factory Pattern
-
-The system uses a factory pattern to create instances of different product types:
+### Factory Functions
+Factory functions create instances of product types with appropriate defaults:
 
 ```typescript
-function createProductType(type: ProductTypeName, config: any): ProductType {
-  switch(type) {
+// Create a product type instance
+export function createProductType(type: ProductTypeName, config: any): ProductType {
+  switch (type) {
     case 'cabinet':
-    case 'bookcase':
-      return { type: 'cabinet', config: createCabinetType(config) };
+      return { 
+        type: 'cabinet', 
+        config: createCabinetType(config) 
+      };
     case 'table':
-    case 'desk':
-      return { type: 'table', config: createTableType(config) };
-    case 'console':
-      return { type: 'console', config: createConsoleType(config) };
+      return { 
+        type: 'table', 
+        config: createTableType(config) 
+      };
+    // Additional cases for other product types
     default:
       throw new Error(`Unknown product type: ${type}`);
   }
@@ -190,7 +84,6 @@ function createProductType(type: ProductTypeName, config: any): ProductType {
 ```
 
 ### Type Guards
-
 Type guards ensure type safety when working with the union types:
 
 ```typescript
@@ -211,7 +104,6 @@ export function isCabinetPreset(preset: ProductPreset): preset is (PresetBase & 
 ```
 
 ### Component Registry
-
 A component registry provides access to available components for each product type:
 
 ```typescript
@@ -232,7 +124,6 @@ const componentRegistry = {
 ```
 
 ## State Management
-
 The Valtio state management system is organized to work with the product type system:
 
 ```typescript
@@ -294,7 +185,6 @@ const configuratorStore = proxy({
 ```
 
 ## Rendering System
-
 The 3D rendering system uses the component-based approach to render different product types:
 
 ```jsx
@@ -314,7 +204,6 @@ function ProductRenderer({ productType }) {
 ```
 
 ## Product Configuration
-
 The resulting product configuration combines type-specific data with common attributes:
 
 ```typescript
@@ -356,4 +245,4 @@ export interface ProductConfiguration {
 - [ ] 3D visualization correctly renders all product types
 - [ ] Presets work correctly for all product types
 - [ ] Type safety is maintained throughout the application
-- [ ] Performance remains optimal when switching between product types 
+- [ ] Performance remains optimal when switching between product types

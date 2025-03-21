@@ -1,186 +1,142 @@
-# Component-Based Architecture Specification
+# Component-Based Architecture Specifications
 
 ## Overview
-The component-based architecture provides a flexible foundation for the Shelfo configurator by treating furniture as compositions of reusable components. This approach enables greater modularity, improves code reuse, and simplifies support for multiple product types.
+This document specifies the component-based architecture for the Shelfo furniture configurator. This architecture enables flexible, modular construction of furniture products from reusable components.
 
-## Business Purpose
-- Enable creation of complex furniture from simple components
-- Allow sharing of common elements across different product types
-- Simplify addition of new furniture components
-- Improve maintainability and testability of the codebase
-- Support manufacturing processes that assemble furniture from components
+## Core Concepts
 
-## Core Components
-
-### Base Component Interface
-
-All components in the system inherit from a common `ProductComponent` interface:
+### Component Model
+Components are the building blocks of furniture products:
 
 ```typescript
-// Common Base Component Interface
+// Base component interface
 export interface ProductComponent {
   id: string;
   type: string;
   position: Position3D;
+  rotation: Rotation3D;
   dimensions: Dimensions;
   material: Material;
   color: Color;
   visible: boolean;
+  metadata: Record<string, any>;
+}
+
+// Position in 3D space
+export interface Position3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+// Rotation in 3D space
+export interface Rotation3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+// Dimensions
+export interface Dimensions {
+  width: number;
+  height: number;
+  depth: number;
 }
 ```
 
 ### Component Types
-
-The system includes specialized component types for different furniture elements:
-
-#### Structural Components
-- **Dividers**: Vertical panels that divide the furniture
-- **Shelves**: Horizontal surfaces for storage
-- **Supports**: Structural elements that provide stability
-- **Tops**: Upper surfaces for tables, desks, etc.
-
-#### Functional Components
-- **Doors**: Hinged panels for enclosed storage
-- **Drawers**: Sliding storage compartments
-- **Legs**: Support elements that elevate furniture
-- **Accessories**: Additional elements like lights, hooks, etc.
-
-### Component Registry
-
-Components are registered in a central registry for discovery and instantiation:
+Specific component types extend the base interface:
 
 ```typescript
-interface ComponentDefinition {
-  name: string;
-  factory: (props: any) => ProductComponent;
-  defaultProps: Record<string, any>;
-  constraints: {
-    compatibleWith: string[];
-    minDimensions?: Partial<Dimensions>;
-    maxDimensions?: Partial<Dimensions>;
-    allowedMaterials?: Material[];
-    allowedColors?: Color[];
-  };
-  renderComponent: React.FC<any>;
+// Shelf component
+export interface ShelfComponent extends ProductComponent {
+  type: 'shelf';
+  thickness: number;
+  edgeStyle: EdgeStyle;
 }
 
-// Component registry
-const componentRegistry: Record<string, ComponentDefinition> = {
-  divider: {
-    name: 'Divider',
-    factory: createDivider,
-    defaultProps: { /* defaults */ },
-    constraints: { /* constraints */ },
-    renderComponent: DividerComponent
-  },
-  // Additional components...
-};
-```
+// Divider component
+export interface DividerComponent extends ProductComponent {
+  type: 'divider';
+  thickness: number;
+}
 
-## Implementation Details
+// Door component
+export interface DoorComponent extends ProductComponent {
+  type: 'door';
+  hingePosition: 'left' | 'right';
+  handleType: HandleType;
+  openAngle: number;
+}
 
-### Component Creation and Management
-
-Components are instantiated through factory functions that ensure proper initialization:
-
-```typescript
-function createDivider(props: Partial<Divider>): Divider {
-  return {
-    id: props.id || generateId(),
-    type: 'divider',
-    position: props.position || { x: 0, y: 0, z: 0 },
-    dimensions: {
-      width: props.dimensions?.width || 2,
-      height: props.dimensions?.height || 30,
-      depth: props.dimensions?.depth || 30
-    },
-    material: props.material || 'wood',
-    color: props.color || 'white',
-    visible: props.visible !== undefined ? props.visible : true
-  };
+// Drawer component
+export interface DrawerComponent extends ProductComponent {
+  type: 'drawer';
+  handleType: HandleType;
+  openPosition: number; // 0 = closed, 1 = fully open
+  depth: number;
 }
 ```
 
-### Component Composition
-
-Products are composed by combining multiple components:
+### Component Factory
+Factory functions create component instances:
 
 ```typescript
-interface ProductComposition {
-  id: string;
-  productType: ProductTypeName;
-  components: ProductComponent[];
-  materialGroups: MaterialGroup[];
-}
-
-function createBookcase(config: BookcaseConfig): ProductComposition {
-  // Create basic structure
-  const structure = createBookcaseStructure(config);
-  
-  // Add shelves
-  const shelves = createShelves(config, structure);
-  
-  // Add dividers
-  const dividers = createDividers(config, structure);
-  
-  // Add accessories
-  const accessories = createAccessories(config);
-  
-  // Group by material
-  const materialGroups = groupByMaterial([...structure, ...shelves, ...dividers, ...accessories]);
-  
+// Create a shelf component
+export function createShelf(params: Partial<ShelfComponent>): ShelfComponent {
   return {
     id: generateId(),
-    productType: 'bookcase',
-    components: [...structure, ...shelves, ...dividers, ...accessories],
-    materialGroups
+    type: 'shelf',
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    dimensions: { width: 800, height: 18, depth: 300 },
+    material: 'wood',
+    color: 'natural',
+    visible: true,
+    thickness: 18,
+    edgeStyle: 'straight',
+    metadata: {},
+    ...params
+  };
+}
+
+// Create a divider component
+export function createDivider(params: Partial<DividerComponent>): DividerComponent {
+  return {
+    id: generateId(),
+    type: 'divider',
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    dimensions: { width: 18, height: 400, depth: 300 },
+    material: 'wood',
+    color: 'natural',
+    visible: true,
+    thickness: 18,
+    metadata: {},
+    ...params
   };
 }
 ```
 
-### Component Interaction
-
-Components may need to interact with or reference other components:
-
-```typescript
-interface ComponentRelation {
-  sourceId: string;
-  targetId: string;
-  type: 'supports' | 'connects' | 'contains' | 'attaches';
-  metadata?: Record<string, any>;
-}
-
-// Example: Shelf supported by dividers
-const relations: ComponentRelation[] = [
-  { sourceId: 'divider1', targetId: 'shelf1', type: 'supports' },
-  { sourceId: 'divider2', targetId: 'shelf1', type: 'supports' }
-];
-```
-
-## 3D Rendering
-
-Components are rendered in the 3D scene using React Three Fiber:
+### Component Rendering
+Components are rendered using React Three Fiber:
 
 ```jsx
-// Component rendering in React Three Fiber
+// Component renderer
 function ComponentRenderer({ component }: { component: ProductComponent }) {
-  const renderMap = {
-    'divider': DividerMesh,
-    'shelf': ShelfMesh,
-    'leg': LegMesh,
-    'tabletop': TabletopMesh,
-    'door': DoorMesh,
-    'drawer': DrawerMesh
-  };
-  
-  const ComponentMesh = renderMap[component.type];
-  
-  if (!ComponentMesh) {
-    console.warn(`No renderer found for component type: ${component.type}`);
-    return null;
+  // Render based on component type
+  switch(component.type) {
+    case 'shelf':
+      return <ShelfRenderer component={component as ShelfComponent} />;
+    case 'divider':
+      return <DividerRenderer component={component as DividerComponent} />;
+    case 'door':
+      return <DoorRenderer component={component as DoorComponent} />;
+    case 'drawer':
+      return <DrawerRenderer component={component as DrawerComponent} />;
+    default:
+      return null;
   }
-  
-  return <ComponentMesh component={component} />;
 }
 
 // Product renderer composes all components
@@ -196,7 +152,6 @@ function ProductRenderer({ components }: { components: ProductComponent[] }) {
 ```
 
 ## Material Groups
-
 Components can be grouped by material to optimize rendering and track material usage:
 
 ```typescript
@@ -232,7 +187,6 @@ function groupByMaterial(components: ProductComponent[]): MaterialGroup[] {
 ```
 
 ## State Management
-
 The Valtio state store manages components with reactive updates:
 
 ```typescript
@@ -259,7 +213,6 @@ const componentStore = proxy({
 ```
 
 ## Configuration Persistence
-
 Component-based configurations are serialized for storage and sharing:
 
 ```typescript
@@ -288,11 +241,14 @@ function serializeConfiguration(config: ProductConfiguration): SerializedConfigu
 
 function deserializeConfiguration(serialized: SerializedConfiguration): ProductConfiguration {
   // Reconstruct configuration from serialized data
+  // Implementation details...
+  return {
+    // Configuration properties
+  };
 }
 ```
 
 ## Interaction Model
-
 User interactions target specific components:
 
 ```typescript
@@ -326,7 +282,6 @@ function handleComponentInteraction(interaction: ComponentInteraction) {
 ```
 
 ## Manufacturing Output
-
 Component data is structured for manufacturing:
 
 ```typescript
@@ -345,6 +300,8 @@ interface ManufacturingSpec {
 
 function generateManufacturingSpecs(components: ProductComponent[]): ManufacturingSpec[] {
   // Group similar components and generate manufacturing specs
+  // Implementation details...
+  return [];
 }
 ```
 
@@ -372,4 +329,4 @@ function generateManufacturingSpecs(components: ProductComponent[]): Manufacturi
 - [ ] 3D rendering accurately represents all component types
 - [ ] Component interactions (selection, modification) work correctly
 - [ ] Material groups correctly track material usage
-- [ ] Configurations can be serialized and deserialized without data loss 
+- [ ] Configurations can be serialized and deserialized without data loss

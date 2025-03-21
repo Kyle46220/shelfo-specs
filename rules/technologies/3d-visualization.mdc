@@ -1,0 +1,277 @@
+---
+description: Guidelines for implementing the 3D visualization system with React Three Fiber
+globs: **/configurator/**/*.ts, **/configurator/**/*.tsx, **/3d/**/*.ts, **/3d/**/*.tsx
+alwaysApply: true
+---
+# 3D Visualization Simplicity Guidelines
+
+## Overview
+These guidelines ensure the 3D visualization system remains simple, performant, and maintainable while providing an engaging user experience.
+
+## Component Structure
+
+### Simple Component Hierarchy
+```typescript
+// GOOD: Simple, flat component hierarchy
+function CabinetModel({ dimensions, material, color }) {
+  return (
+    <group>
+      <Frame dimensions={dimensions} material={material} color={color} />
+      <Shelves dimensions={dimensions} material={material} color={color} />
+      <Dividers dimensions={dimensions} material={material} color={color} />
+    </group>
+  );
+}
+
+// BAD: Overly nested component hierarchy
+function ComplexCabinetModel({ config }) {
+  return (
+    <group>
+      <ModelContainer>
+        <FrameWrapper>
+          <FrameTop config={config.frame} />
+          <FrameSides config={config.frame} />
+          <FrameBottom config={config.frame} />
+        </FrameWrapper>
+        <InternalComponentsWrapper>
+          <ShelvesContainer>
+            {config.shelves.map(shelf => (
+              <ShelfWrapper key={shelf.id}>
+                <Shelf config={shelf} />
+                <ShelfEdges config={shelf} />
+              </ShelfWrapper>
+            ))}
+          </ShelvesContainer>
+          <DividersContainer>
+            {/* Similar nesting */}
+          </DividersContainer>
+        </InternalComponentsWrapper>
+      </ModelContainer>
+    </group>
+  );
+}
+```
+
+### Mesh Reuse
+```typescript
+// GOOD: Reuse meshes for similar components
+function Shelves({ shelves, material, color }) {
+  // Create a single geometry for all shelves
+  const shelfGeometry = useMemo(() => new BoxGeometry(1, 0.02, 1), []);
+  const shelfMaterial = useMemo(() => new MeshStandardMaterial({ color }), [color]);
+  
+  return (
+    <group>
+      {shelves.map(shelf => (
+        <mesh 
+          key={shelf.id}
+          geometry={shelfGeometry}
+          material={shelfMaterial}
+          position={shelf.position}
+          scale={[shelf.width, shelf.height, shelf.depth]}
+        />
+      ))}
+    </group>
+  );
+}
+
+// BETTER: Use instanced meshes for many identical components
+function ShelvesInstanced({ shelves, material, color }) {
+  const meshRef = useRef();
+  const tempMatrix = useMemo(() => new Matrix4(), []);
+  
+  useLayoutEffect(() => {
+    if (meshRef.current) {
+      shelves.forEach((shelf, i) => {
+        tempMatrix.makeScale(shelf.width, shelf.height, shelf.depth);
+        tempMatrix.setPosition(shelf.position[0], shelf.position[1], shelf.position[2]);
+        meshRef.current.setMatrixAt(i, tempMatrix);
+      });
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
+  }, [shelves]);
+  
+  return (
+    <instancedMesh 
+      ref={meshRef} 
+      args={[null, null, shelves.length]}
+    >
+      <boxGeometry args={[1, 0.02, 1]} />
+      <meshStandardMaterial color={color} />
+    </instancedMesh>
+  );
+}
+```
+
+## Performance Optimization
+
+### Simple Scene Setup
+```typescript
+// GOOD: Simple scene with essential elements only
+function ConfiguratorScene() {
+  return (
+    <Canvas shadows camera={{ position: [0, 1, 5], fov: 50 }}>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} castShadow />
+      <ProductModel />
+      <OrbitControls />
+    </Canvas>
+  );
+}
+
+// BAD: Overly complex scene with unnecessary elements
+function ComplexScene() {
+  return (
+    <Canvas shadows gl={{ antialias: true, alpha: true, stencil: true, depth: true }}>
+      <fog attach="fog" args={['#f0f0f0', 5, 30]} />
+      <color attach="background" args={['#f0f0f0']} />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} castShadow shadow-mapSize={[2048, 2048]} />
+      <pointLight position={[-5, 5, -5]} intensity={0.5} />
+      <hemisphereLight args={['#ddeeff', '#202020', 0.5]} />
+      <Environment preset="apartment" />
+      <EffectComposer>
+        <Bloom luminanceThreshold={0.8} intensity={0.5} />
+        <ChromaticAberration offset={[0.002, 0.002]} />
+      </EffectComposer>
+      <ProductModel />
+      <OrbitControls 
+        minPolarAngle={Math.PI / 6} 
+        maxPolarAngle={Math.PI / 2} 
+        enableDamping 
+        dampingFactor={0.05} 
+      />
+      <Grid infiniteGrid fadeDistance={30} />
+    </Canvas>
+  );
+}
+```
+
+### Conditional Rendering
+```typescript
+// GOOD: Simple conditional rendering based on distance
+function DetailedModel({ position, distance }) {
+  const [isDetailed, setIsDetailed] = useState(true);
+  
+  useFrame(({ camera }) => {
+    const distanceToCamera = position.distanceTo(camera.position);
+    setIsDetailed(distanceToCamera < distance);
+  });
+  
+  return isDetailed ? <HighDetailModel /> : <LowDetailModel />;
+}
+
+// BETTER: Use drei's Detailed component
+function OptimizedDetailedModel() {
+  return (
+    <Detailed distances={[0, 10, 20]}>
+      <HighDetailModel /> {/* Closest */}
+      <MediumDetailModel /> {/* Mid-range */}
+      <LowDetailModel /> {/* Furthest */}
+    </Detailed>
+  );
+}
+```
+
+## Material Management
+
+### Simple Material System
+```typescript
+// GOOD: Simple material handling
+function useMaterials(material, color) {
+  return useMemo(() => {
+    switch (material) {
+      case 'wood':
+        return new MeshStandardMaterial({ 
+          color, 
+          roughness: 0.8, 
+          metalness: 0.1 
+        });
+      case 'metal':
+        return new MeshStandardMaterial({ 
+          color, 
+          roughness: 0.2, 
+          metalness: 0.8 
+        });
+      case 'glass':
+        return new MeshPhysicalMaterial({ 
+          color, 
+          roughness: 0.1, 
+          transmission: 0.9, 
+          transparent: true 
+        });
+      default:
+        return new MeshStandardMaterial({ color });
+    }
+  }, [material, color]);
+}
+
+// BAD: Overly complex material system
+function useComplexMaterials(config) {
+  // Complex implementation with many parameters and conditions
+  // ...
+}
+```
+
+## Event Handling
+
+### Simple Interaction
+```typescript
+// GOOD: Simple hover and click handling
+function InteractiveComponent({ onSelect }) {
+  const [hovered, setHovered] = useState(false);
+  const color = hovered ? 'hotpink' : 'orange';
+  
+  return (
+    <mesh
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+      onClick={onSelect}
+    >
+      <boxGeometry />
+      <meshStandardMaterial color={color} />
+    </mesh>
+  );
+}
+
+// BAD: Complex event handling with many states
+function ComplexInteractiveComponent({ onSelect, onHover, onDrag }) {
+  // Complex implementation with many states and event handlers
+  // ...
+}
+```
+
+## Implementation Checklist
+
+### Scene Setup
+- [ ] Canvas has only essential props
+- [ ] Lighting setup uses minimal lights (ambient + directional is often sufficient)
+- [ ] Camera settings are simple and appropriate for the scene
+- [ ] Controls are configured with sensible defaults
+
+### Component Design
+- [ ] Components have clear, focused responsibilities
+- [ ] Mesh reuse is implemented for similar elements
+- [ ] Instanced meshes are used for repeated elements
+- [ ] Component hierarchy is flat and logical
+
+### Performance
+- [ ] Heavy computations are memoized
+- [ ] Level of detail is implemented for complex models
+- [ ] Non-essential effects are avoided
+- [ ] Textures and models are optimized for size
+
+### Materials
+- [ ] Material system is simple and consistent
+- [ ] Material properties are appropriate for the material type
+- [ ] Material creation is memoized
+- [ ] Shared materials are used where appropriate
+
+### Interactions
+- [ ] Event handling is straightforward
+- [ ] Hover and selection states are visually clear
+- [ ] Interaction feedback is immediate
+- [ ] Complex gestures are avoided unless essential
+
+## Remember
+"The best 3D experience is one where users don't notice the technology, only the product."

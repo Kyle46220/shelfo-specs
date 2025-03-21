@@ -1,0 +1,329 @@
+---
+description: Guidelines for ensuring type safety while maintaining simplicity
+globs: **/*.ts, **/*.tsx
+alwaysApply: true
+---
+# Simple TypeScript Safety Guidelines
+
+## Overview
+These guidelines ensure type safety in the codebase while maintaining simplicity and readability, avoiding overly complex type structures.
+
+## Type Definitions
+
+### Simple Interface Design
+```typescript
+// GOOD: Simple, focused interfaces
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+}
+
+interface ProductConfiguration {
+  productId: string;
+  dimensions: Dimensions;
+  material: string;
+  color: string;
+}
+
+interface Dimensions {
+  width: number;
+  height: number;
+  depth: number;
+}
+
+// BAD: Overly complex interfaces with too many properties
+interface ComplexProduct {
+  id: string;
+  name: string;
+  description: string;
+  shortDescription: string;
+  longDescription: string;
+  price: number;
+  salePrice: number | null;
+  discount: number | null;
+  tax: number;
+  currency: string;
+  sku: string;
+  barcode: string;
+  weight: number;
+  weightUnit: string;
+  dimensions: {
+    width: number;
+    height: number;
+    depth: number;
+    unit: string;
+  };
+  category: {
+    id: string;
+    name: string;
+    path: string[];
+  };
+  tags: string[];
+  attributes: Record<string, string>;
+  images: {
+    id: string;
+    url: string;
+    alt: string;
+    width: number;
+    height: number;
+    isPrimary: boolean;
+  }[];
+  // Many more properties...
+}
+```
+
+### Union Types
+```typescript
+// GOOD: Simple discriminated unions
+type ProductType = 'cabinet' | 'bookcase' | 'table';
+
+type ConfiguratorState = 
+  | { status: 'loading' }
+  | { status: 'error'; error: string }
+  | { status: 'ready'; configuration: ProductConfiguration };
+
+// Usage
+function renderConfigurator(state: ConfiguratorState) {
+  switch (state.status) {
+    case 'loading':
+      return <LoadingSpinner />;
+    case 'error':
+      return <ErrorMessage message={state.error} />;
+    case 'ready':
+      return <Configurator configuration={state.configuration} />;
+  }
+}
+
+// BAD: Complex nested conditional types
+type ComplexProductType<T extends string> = T extends 'cabinet' 
+  ? { type: 'cabinet'; shelves: number; doors: number }
+  : T extends 'bookcase'
+    ? { type: 'bookcase'; shelves: number; isOpenBack: boolean }
+    : T extends 'table'
+      ? { type: 'table'; legs: number; shape: 'round' | 'rectangular' }
+      : never;
+```
+
+## Type Guards
+
+### Simple Type Guards
+```typescript
+// GOOD: Simple type guards
+function isCabinet(product: any): product is Cabinet {
+  return product && product.type === 'cabinet';
+}
+
+function isBookcase(product: any): product is Bookcase {
+  return product && product.type === 'bookcase';
+}
+
+// Usage
+if (isCabinet(product)) {
+  // TypeScript knows product is Cabinet here
+  configureDoors(product.doors);
+}
+
+// BAD: Complex type predicates with excessive checks
+function isValidComplexProduct(obj: any): obj is ComplexProduct {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    typeof obj.description === 'string' &&
+    typeof obj.price === 'number' &&
+    (obj.salePrice === null || typeof obj.salePrice === 'number') &&
+    (obj.discount === null || typeof obj.discount === 'number') &&
+    typeof obj.tax === 'number' &&
+    typeof obj.currency === 'string' &&
+    typeof obj.sku === 'string' &&
+    // Many more checks...
+    Array.isArray(obj.images) &&
+    obj.images.every(
+      (img: any) =>
+        typeof img === 'object' &&
+        img !== null &&
+        typeof img.id === 'string' &&
+        typeof img.url === 'string' &&
+        typeof img.alt === 'string' &&
+        typeof img.width === 'number' &&
+        typeof img.height === 'number' &&
+        typeof img.isPrimary === 'boolean'
+    )
+  );
+}
+```
+
+## Generic Types
+
+### Simple Generics
+```typescript
+// GOOD: Simple, focused generic types
+type Result<T> = {
+  data: T | null;
+  error: string | null;
+  isLoading: boolean;
+};
+
+// Usage
+function useProductData(id: string): Result<Product> {
+  // Implementation...
+}
+
+// BAD: Overly complex generic types
+type ComplexResult<T, E extends Error, M extends Record<string, any>> = {
+  data: T | null;
+  error: E | null;
+  meta: M;
+  status: 'idle' | 'loading' | 'success' | 'error';
+  timestamp: number;
+  retries: number;
+  cache: {
+    key: string;
+    ttl: number;
+    lastUpdated: number;
+  };
+};
+```
+
+## Type Assertions
+
+### Safe Type Assertions
+```typescript
+// GOOD: Safe type assertions with validation
+function parseConfiguration(json: string): ProductConfiguration {
+  const parsed = JSON.parse(json);
+  
+  // Validate before asserting
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Invalid configuration: not an object');
+  }
+  
+  if (!parsed.productId || typeof parsed.productId !== 'string') {
+    throw new Error('Invalid configuration: missing or invalid productId');
+  }
+  
+  // More validation...
+  
+  return parsed as ProductConfiguration;
+}
+
+// BAD: Unsafe type assertions
+function parseUnsafeConfiguration(json: string): ProductConfiguration {
+  // Dangerous! No validation before assertion
+  return JSON.parse(json) as ProductConfiguration;
+}
+```
+
+## Utility Types
+
+### Simple Utility Types
+```typescript
+// GOOD: Simple utility types
+type Nullable<T> = T | null;
+type Optional<T> = T | undefined;
+type PartialConfiguration = Partial<ProductConfiguration>;
+
+// Usage
+function updateConfiguration(config: PartialConfiguration) {
+  // Implementation...
+}
+
+// BAD: Complex nested utility types
+type DeepPartial<T> = T extends object
+  ? { [P in keyof T]?: DeepPartial<T[P]> }
+  : T;
+
+type DeepReadonly<T> = T extends object
+  ? { readonly [P in keyof T]: DeepReadonly<T[P]> }
+  : T;
+
+type ComplexConfigUpdate = DeepPartial<DeepReadonly<ProductConfiguration>>;
+```
+
+## Error Handling
+
+### Type-Safe Error Handling
+```typescript
+// GOOD: Simple error handling with type safety
+try {
+  const result = await fetchProduct(id);
+  return result;
+} catch (error) {
+  // Type guard for Error objects
+  if (error instanceof Error) {
+    return { error: error.message };
+  }
+  // Fallback for unknown errors
+  return { error: 'An unknown error occurred' };
+}
+
+// BAD: Complex error handling with excessive type checking
+try {
+  const result = await fetchProduct(id);
+  return result;
+} catch (error) {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    typeof error.code === 'string' &&
+    typeof error.message === 'string'
+  ) {
+    // Complex handling based on error codes
+    switch ((error as { code: string }).code) {
+      case 'NETWORK_ERROR':
+        // Handle network error
+        break;
+      case 'TIMEOUT_ERROR':
+        // Handle timeout
+        break;
+      // Many more cases...
+      default:
+        // Handle unknown error code
+    }
+  } else if (error instanceof Error) {
+    // Handle standard Error
+  } else if (typeof error === 'string') {
+    // Handle string error
+  } else {
+    // Handle truly unknown error
+  }
+}
+```
+
+## Implementation Checklist
+
+### Type Definitions
+- [ ] Interfaces are focused and have clear purposes
+- [ ] Types are named descriptively
+- [ ] Union types use discriminated unions where appropriate
+- [ ] Generic types are simple and focused
+- [ ] Avoid excessive nesting of types
+
+### Type Safety
+- [ ] Type guards are used for runtime type checking
+- [ ] Type assertions are preceded by validation
+- [ ] Nullable values are explicitly typed
+- [ ] API responses are properly typed
+- [ ] Error handling includes type checking
+
+### TypeScript Configuration
+- [ ] `strict` mode is enabled
+- [ ] `noImplicitAny` is enabled
+- [ ] `strictNullChecks` is enabled
+- [ ] `noUncheckedIndexedAccess` is enabled
+- [ ] Import types are explicit
+
+### Best Practices
+- [ ] Return types are explicitly defined on functions
+- [ ] Function parameters have explicit types
+- [ ] Event handlers have proper types
+- [ ] React component props use interfaces
+- [ ] Avoid `any` type except when absolutely necessary
+
+## Remember
+"Type safety should clarify your code, not complicate it."

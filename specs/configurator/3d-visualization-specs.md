@@ -1,263 +1,493 @@
-
-
-## Responsive Design
-1. Mobile-specific camera controls with touch support
-2. Simplified model for low-end devices
-3. UI adaptations for small screens
-4. Performance monitoring and throttling
-5. Viewport-aware positioning of overlays and modals
-
-## Error Handling and Fallbacks
-1. WebGL detection and fallback messaging
-2. Error recovery for lost WebGL context
-3. Placeholder images for fallback mode
-4. Loading error handling and retries
-5. Memory leak prevention with proper disposal
-
-## Accessibility Considerations
-1. Keyboard navigation for camera controls
-2. Alternative text descriptions for 3D elements
-3. ARIA labels for interactive components
-4. Color contrast compliance for overlays
-5. Non-3D alternative for screen readers
-
-## Integration with Configurator UI
-1. Synchronized state between 3D view and configuration panel
-2. Bidirectional updates when changes occur
-3. Highlighted components match active configuration section
-4. Camera positioning adjusts to focus on configured area
-5. Screenshot capability for order confirmation
-
-## Acceptance Criteria
-- [ ] 3D model renders correctly for all product types
-- [ ] Camera controls allow rotation, zoom, and pan with appropriate limits
-- [ ] Interactive elements highlight on hover
-- [ ] Configuration changes update 3D model in real-time
-- [ ] Model maintains performance benchmark of 30+ FPS on mid-range devices
-- [ ] Mobile view provides appropriate controls and performance
-- [ ] All materials and colors render correctly
-- [ ] Model dimensions accurately reflect configuration values
-- [ ] Compartment hover detection works correctly
-- [ ] System degrades gracefully on unsupported browsers
-- [ ] Memory usage remains within acceptable limits during extended sessions
-
-## Performance Targets
-- Initial load: < 3s on desktop, < 5s on mobile
-- Interaction response: < 100ms
-- Frame rate: 60fps on desktop, 30fps on mobile
-- Memory usage: < 200MB on desktop, < 100MB on mobile
-- Model complexity: < 50k polygons for main view
-
-## Future Enhancements
-1. AR view for mobile devices
-2. Animation sequences for assembly visualization
-3. Exploded view for component details
-4. Higher resolution textures for zoom views
-5. Environment customization (room context)# 3D Visualization Specification
+# 3D Visualization Specifications
 
 ## Overview
-The 3D visualization system provides an interactive, real-time representation of configurable products. It allows customers to see their customizations immediately and gives them confidence in their purchase decisions.
+This document specifies the 3D visualization system for the Shelfo furniture configurator. The visualization system provides real-time, interactive 3D rendering of configurable furniture products using React Three Fiber (R3F).
 
-## User Interface Requirements
-- Interactive 3D model that responds to user input
-- Camera controls for rotation, pan, and zoom
-- Visual indicators for interactive elements
-- Hover states for configurable components
-- Loading states during model initialization
-- Fallback for browsers without WebGL support
-- Responsive scaling for different device sizes
-- Visual feedback when configuration changes
+## Core Components
 
-## Technical Requirements
-- Reference: `.cursor/rules/technologies/3d-components.mdc`
-- Reference: `.cursor/rules/technologies/performance.mdc`
+### Scene Setup
+The 3D scene provides the environment for furniture visualization:
 
-## Functional Requirements
-
-### 3D Rendering
-1. Real-time rendering of product based on configuration
-2. Accurate materials and textures for all product options
-3. Physically-based rendering for realistic appearance
-4. Optimized models for web performance
-5. Level of detail (LOD) adjustments for mobile
-6. Proper lighting to showcase product features
-
-### Interactive Elements
-1. Camera controls with appropriate limits
-   - Rotation around product
-   - Zoom in/out with constraints
-   - Optional pan for larger products
-2. Highlighting of interactive components on hover
-3. Selection of components for configuration
-4. Visual feedback for selected/active components
-5. Transition animations when configuration changes
-
-### Component Interactions
-1. Hover over compartment to show configuration modal
-2. Click on materials to open material selection
-3. Drag handles to adjust dimensions (future enhancement)
-4. Visual indicators for manufacturing constraints
-5. Highlight invalid configurations with visual cues
-
-## Technical Architecture
-
-### Component Structure
-```
-3D Scene
-├── Camera Setup
-├── Lighting
-├── Product Model
-│   ├── Product-specific Component (BookcaseModel, TableModel)
-│   ├── Materials
-│   ├── Interactive Elements
-│   └── Animation Controllers
-└── Environment
+```jsx
+// Main scene component
+function ConfiguratorScene({ children }) {
+  return (
+    <Canvas
+      shadows
+      camera={{ position: [0, 1.5, 4], fov: 50 }}
+      gl={{ preserveDrawingBuffer: true }}
+    >
+      <Suspense fallback={<LoadingPlaceholder />}>
+        <Environment preset="apartment" />
+        <ambientLight intensity={0.5} />
+        <directionalLight 
+          position={[10, 10, 5]} 
+          intensity={0.5} 
+          castShadow 
+          shadow-mapSize={[2048, 2048]} 
+        />
+        <PresentationControls
+          global
+          zoom={0.8}
+          rotation={[0, 0, 0]}
+          polar={[-Math.PI / 4, Math.PI / 4]}
+          azimuth={[-Math.PI / 4, Math.PI / 4]}
+        >
+          <group position={[0, 0, 0]} scale={1}>
+            {children}
+          </group>
+        </PresentationControls>
+        <gridHelper args={[10, 10]} position={[0, -0.5, 0]} />
+        <ContactShadows 
+          opacity={0.5} 
+          scale={10} 
+          blur={1} 
+          far={10} 
+          resolution={256} 
+          color="#000000" 
+        />
+      </Suspense>
+    </Canvas>
+  );
+}
 ```
 
-### Technology Stack
-- React Three Fiber for React integration
-- Three.js for WebGL rendering
-- Drei for common Three.js utilities
-- Valtio for state management (migrated from Zustand)
-- WebGL for hardware-accelerated rendering
+### Model Loading
+The system loads and manages 3D models efficiently:
 
-## 3D Models and Assets
+```jsx
+// Model loader component
+function ModelLoader({ url, onLoad }) {
+  const { scene } = useGLTF(url);
+  
+  useEffect(() => {
+    if (scene && onLoad) {
+      onLoad(scene);
+    }
+  }, [scene, onLoad]);
+  
+  return null;
+}
 
-### Model Requirements
-1. Optimized mesh geometry for web (<50k polygons)
-2. Proper UV mapping for textures
-3. Named components for interactive selection
-4. LOD versions for performance optimization
-5. Separate meshes for configurable components
+// Preload critical models
+useEffect(() => {
+  const urls = [
+    '/models/base-cabinet.glb',
+    '/models/cabinet-foot.glb',
+    '/models/shelf.glb',
+    '/models/divider.glb',
+    '/models/door.glb',
+    '/models/drawer.glb'
+  ];
+  
+  urls.forEach(url => {
+    preloadGLTF(url);
+  });
+}, []);
+```
 
-### Material Requirements
-1. PBR materials with appropriate properties
-2. Material variants for all color options
-3. Optimized textures for web loading
-4. Fallback materials for lower-end devices
-5. Consistent material application across models
+### Component Rendering
+Components are rendered based on their type and properties:
+
+```jsx
+// Shelf component renderer
+function ShelfRenderer({ component }) {
+  const { nodes, materials } = useGLTF('/models/shelf.glb');
+  const { position, rotation, dimensions, material, color } = component;
+  
+  // Apply material and color
+  const materialProps = useMemo(() => {
+    return getMaterialProperties(material, color);
+  }, [material, color]);
+  
+  return (
+    <group position={[position.x, position.y, position.z]} rotation={[rotation.x, rotation.y, rotation.z]}>
+      <mesh 
+        geometry={nodes.Shelf.geometry}
+        scale={[dimensions.width / 100, dimensions.height / 100, dimensions.depth / 100]}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial {...materialProps} />
+      </mesh>
+    </group>
+  );
+}
+
+// Divider component renderer
+function DividerRenderer({ component }) {
+  const { nodes, materials } = useGLTF('/models/divider.glb');
+  const { position, rotation, dimensions, material, color } = component;
+  
+  // Apply material and color
+  const materialProps = useMemo(() => {
+    return getMaterialProperties(material, color);
+  }, [material, color]);
+  
+  return (
+    <group position={[position.x, position.y, position.z]} rotation={[rotation.x, rotation.y, rotation.z]}>
+      <mesh 
+        geometry={nodes.Divider.geometry}
+        scale={[dimensions.width / 100, dimensions.height / 100, dimensions.depth / 100]}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial {...materialProps} />
+      </mesh>
+    </group>
+  );
+}
+```
+
+### Material System
+The material system provides realistic rendering of different materials:
+
+```typescript
+// Material properties
+interface MaterialProperties {
+  color: string;
+  roughness: number;
+  metalness: number;
+  normalMap?: THREE.Texture;
+  aoMap?: THREE.Texture;
+  map?: THREE.Texture;
+}
+
+// Get material properties based on material type and color
+function getMaterialProperties(material: Material, color: Color): MaterialProperties {
+  // Base properties
+  const baseProps: MaterialProperties = {
+    color: getColorHex(color),
+    roughness: 0.5,
+    metalness: 0,
+  };
+  
+  // Apply material-specific properties
+  switch (material) {
+    case 'wood':
+      return {
+        ...baseProps,
+        roughness: 0.7,
+        normalMap: woodNormalMap,
+        map: woodTextures[color] || woodTextures.natural,
+      };
+    case 'metal':
+      return {
+        ...baseProps,
+        roughness: 0.2,
+        metalness: 0.8,
+      };
+    case 'glass':
+      return {
+        ...baseProps,
+        roughness: 0.1,
+        metalness: 0,
+        transparent: true,
+        opacity: 0.6,
+      };
+    default:
+      return baseProps;
+  }
+}
+```
+
+### Interaction System
+The interaction system handles user interactions with the 3D model:
+
+```jsx
+// Interaction handler component
+function InteractionHandler({ children }) {
+  const [hovered, setHovered] = useState(null);
+  const [selected, setSelected] = useState(null);
+  
+  // Handle pointer events
+  const handlePointerOver = useCallback((e) => {
+    e.stopPropagation();
+    setHovered(e.object.userData.id);
+  }, []);
+  
+  const handlePointerOut = useCallback(() => {
+    setHovered(null);
+  }, []);
+  
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    setSelected(e.object.userData.id);
+  }, []);
+  
+  // Apply interaction handlers to children
+  const childrenWithProps = React.Children.map(children, child => {
+    return React.cloneElement(child, {
+      onPointerOver: handlePointerOver,
+      onPointerOut: handlePointerOut,
+      onClick: handleClick,
+      userData: {
+        ...child.props.userData,
+        hovered: hovered === child.props.userData?.id,
+        selected: selected === child.props.userData?.id,
+      }
+    });
+  });
+  
+  return <>{childrenWithProps}</>;
+}
+```
+
+### Camera Controls
+The camera control system provides intuitive navigation:
+
+```jsx
+// Camera controls component
+function CameraControls() {
+  const { camera, gl } = useThree();
+  const controls = useRef();
+  
+  useFrame(() => {
+    controls.current.update();
+  });
+  
+  return (
+    <OrbitControls
+      ref={controls}
+      args={[camera, gl.domElement]}
+      enableDamping
+      dampingFactor={0.05}
+      minDistance={2}
+      maxDistance={10}
+      minPolarAngle={Math.PI / 6}
+      maxPolarAngle={Math.PI / 2}
+      enablePan={false}
+    />
+  );
+}
+```
+
+### Screenshot System
+The screenshot system captures the current configuration:
+
+```jsx
+// Screenshot function
+function captureScreenshot() {
+  const canvas = document.querySelector('canvas');
+  if (!canvas) return null;
+  
+  // Render at higher resolution for better quality
+  const originalSize = {
+    width: canvas.width,
+    height: canvas.height
+  };
+  
+  // Set to higher resolution temporarily
+  canvas.width = 1920;
+  canvas.height = 1080;
+  
+  // Force render at new resolution
+  renderer.render(scene, camera);
+  
+  // Capture image
+  const dataUrl = canvas.toDataURL('image/png');
+  
+  // Restore original size
+  canvas.width = originalSize.width;
+  canvas.height = originalSize.height;
+  
+  return dataUrl;
+}
+```
 
 ## Performance Optimization
 
-### Loading Optimization
-1. Progressive loading of 3D assets
-2. Loading screen or placeholder during initialization
-3. Prioritize essential components first
-4. Lazy-load textures and secondary models
-5. Asset preloading for common configurations
+### Instanced Meshes
+For repeated components, instanced meshes improve performance:
 
-### Runtime Optimization
-1. Frustum culling for off-screen components
-2. Instancing for repeated elements
-3. Frame rate throttling on mobile devices
-4. Memory cleanup for removed components
-5. WebGL context management for SPA navigation
-
-## Interaction System
-
-### Camera Controls
-```javascript
-// Camera constraints
-const cameraConstraints = {
-  minPolarAngle: Math.PI / 6,   // Limit how high user can orbit
-  maxPolarAngle: Math.PI / 2,   // Limit how low user can orbit
-  minDistance: 1,               // Limit how close user can zoom
-  maxDistance: 4,               // Limit how far user can zoom
-  enablePan: true,              // Allow panning
-  enableZoom: true              // Allow zooming
-};
-```
-
-### Hover Detection
-```javascript
-// Ray-casting for hover detection
-function handlePointerMove(event) {
-  // Convert mouse position to normalized device coordinates
-  const mouse = new THREE.Vector2();
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+```jsx
+// Instanced mesh renderer for repeated components
+function InstancedComponentRenderer({ components, modelUrl, modelNode }) {
+  const { nodes } = useGLTF(modelUrl);
+  const geometry = nodes[modelNode].geometry;
+  const meshRef = useRef();
   
-  // Set up raycaster
-  raycaster.setFromCamera(mouse, camera);
+  // Update instances when components change
+  useEffect(() => {
+    if (!meshRef.current) return;
+    
+    components.forEach((component, i) => {
+      // Create transformation matrix
+      const matrix = new THREE.Matrix4();
+      
+      // Set position
+      matrix.setPosition(component.position.x, component.position.y, component.position.z);
+      
+      // Set rotation
+      const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(
+        new THREE.Euler(component.rotation.x, component.rotation.y, component.rotation.z)
+      );
+      matrix.multiply(rotationMatrix);
+      
+      // Set scale
+      const scaleMatrix = new THREE.Matrix4().makeScale(
+        component.dimensions.width / 100,
+        component.dimensions.height / 100,
+        component.dimensions.depth / 100
+      );
+      matrix.multiply(scaleMatrix);
+      
+      // Apply matrix to instance
+      meshRef.current.setMatrixAt(i, matrix);
+    });
+    
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [components]);
   
-  // Find intersections
-  const intersects = raycaster.intersectObjects(interactiveObjects);
-  
-  if (intersects.length > 0) {
-    const hoveredObject = intersects[0].object;
-    handleObjectHover(hoveredObject);
-  } else {
-    clearHoverState();
-  }
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[geometry, null, components.length]}
+      castShadow
+      receiveShadow
+    >
+      <meshStandardMaterial {...getMaterialProperties(components[0].material, components[0].color)} />
+    </instancedMesh>
+  );
 }
 ```
 
-## Component Specification: BookcaseModel
+### Level of Detail
+Level of detail (LOD) reduces complexity for distant objects:
 
-### Structure
-```javascript
-// Logical structure of bookcase model
-const bookcaseComponents = {
-  frame: {
-    leftSide: mesh,
-    rightSide: mesh,
-    top: mesh,
-    bottom: mesh,
-    backPanel: mesh
-  },
-  shelves: [
-    { id: 'shelf-1', mesh: mesh, position: [0, y1, 0] },
-    { id: 'shelf-2', mesh: mesh, position: [0, y2, 0] },
-    // ...additional shelves
-  ],
-  dividers: [
-    { id: 'divider-1', mesh: mesh, position: [x1, y1, 0] },
-    // ...additional dividers
-  ],
-  compartments: [
-    { 
-      id: 'compartment-1-1', 
-      rowIndex: 0, 
-      columnIndex: 0,
-      mesh: mesh,
-      bounds: { width, height, depth },
-      position: [x, y, z]
-    },
-    // ...additional compartments
-  ]
-};
+```jsx
+// LOD component
+function LODComponent({ component, highDetailDistance = 5 }) {
+  const { camera } = useThree();
+  const [detail, setDetail] = useState('high');
+  
+  // Check distance from camera and update detail level
+  useFrame(() => {
+    const distance = camera.position.distanceTo(
+      new THREE.Vector3(component.position.x, component.position.y, component.position.z)
+    );
+    
+    const newDetail = distance < highDetailDistance ? 'high' : 'low';
+    if (newDetail !== detail) {
+      setDetail(newDetail);
+    }
+  });
+  
+  return detail === 'high' 
+    ? <HighDetailRenderer component={component} />
+    : <LowDetailRenderer component={component} />;
+}
 ```
 
-### Interaction Handling
-```javascript
-// Handle hovering over a bookcase compartment
-function handleCompartmentHover(compartment) {
-  // Update state
-  state.hoveredRow = compartment.rowIndex;
-  state.hoveredRowPosition = {
-    x: event.clientX,
-    y: event.clientY,
-    worldPosition: compartment.position
-  };
-  
-  // Highlight the compartment
-  compartment.mesh.material.opacity = 0.3;
-  
-  // Position the configuration modal
-  positionConfigModal(event.clientX, event.clientY);
-}
+### Texture Management
+Efficient texture management reduces memory usage:
 
-// Clear hover state
-function clearHoverState() {
-  if (state.hoveredRow !== null) {
-    // Reset highlight
-    const previousRow = findRowByIndex(state.hoveredRow);
-    if (previousRow) {
-      previousRow.mesh.material.opacity = 0;
+```jsx
+// Texture manager
+const textureManager = {
+  textures: {},
+  
+  // Load texture with caching
+  loadTexture(url) {
+    if (this.textures[url]) {
+      return this.textures[url];
     }
     
-    // Clear state
-    state.hoveredRow = null;
-    state.hoveredRowPosition = null;
+    const texture = new THREE.TextureLoader().load(url);
+    this.textures[url] = texture;
+    
+    return texture;
+  },
+  
+  // Preload common textures
+  preloadTextures() {
+    const urls = [
+      '/textures/wood_oak.jpg',
+      '/textures/wood_walnut.jpg',
+      '/textures/wood_pine.jpg',
+      '/textures/metal.jpg',
+      '/textures/normal_wood.jpg'
+    ];
+    
+    urls.forEach(url => this.loadTexture(url));
+  },
+  
+  // Release unused textures
+  releaseUnused(usedUrls) {
+    Object.keys(this.textures).forEach(url => {
+      if (!usedUrls.includes(url)) {
+        this.textures[url].dispose();
+        delete this.textures[url];
+      }
+    });
   }
+};
+```
+
+## Mobile Optimization
+Special considerations for mobile performance:
+
+```jsx
+// Mobile-optimized scene
+function MobileOptimizedScene({ children }) {
+  const isMobile = useIsMobile();
+  
+  // Adjust settings based on device
+  const settings = useMemo(() => {
+    return isMobile ? {
+      shadowMapSize: 1024,
+      pixelRatio: Math.min(window.devicePixelRatio, 2),
+      maxLights: 2,
+      enableSSAO: false,
+      enableBloom: false
+    } : {
+      shadowMapSize: 2048,
+      pixelRatio: window.devicePixelRatio,
+      maxLights: 4,
+      enableSSAO: true,
+      enableBloom: true
+    };
+  }, [isMobile]);
+  
+  return (
+    <Canvas
+      shadows
+      camera={{ position: [0, 1.5, 4], fov: 50 }}
+      gl={{ 
+        preserveDrawingBuffer: true,
+        antialias: !isMobile,
+        powerPreference: 'high-performance'
+      }}
+      dpr={settings.pixelRatio}
+    >
+      {/* Scene content with optimized settings */}
+    </Canvas>
+  );
 }
+```
+
+## Integration Points
+
+### Product Type System
+- Type-specific 3D model loading
+- Type-specific component rendering
+- Type-specific camera positioning
+
+### Component System
+- Component-based rendering
+- Component interaction handling
+- Component material application
+
+### UI Integration
+- 3D view synchronized with UI controls
+- Real-time updates based on user input
+- Highlighting components based on UI selection
+
+## Success Criteria
+- [ ] 3D visualization accurately represents all product types
+- [ ] Real-time updates reflect configuration changes immediately
+- [ ] Performance meets targets on both desktop and mobile devices
+- [ ] Material rendering is realistic and visually appealing
+- [ ] User interactions with 3D model are intuitive and responsive
+- [ ] Screenshots capture high-quality images of configurations
+- [ ] Mobile optimization provides acceptable performance on devices
