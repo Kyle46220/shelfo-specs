@@ -1,0 +1,90 @@
+---
+description: Rule for initiating a structured debugging process for features with passing tests but functional bugs
+globs: **/*.{js,jsx,ts,tsx}
+alwaysApply: false
+---
+
+# Debug Workflow Rule
+
+## Purpose
+This rule establishes a structured debugging workflow for features that have passing tests but exhibit unexpected behavior or bugs in actual usage.
+
+<rule>
+name: debug_workflow
+description: Initiates a structured debugging process for features with passing tests but functional bugs
+filters:
+  - type: content
+    pattern: "(?i)debug (feature|workflow) for .*"
+  - type: intent
+    pattern: "debug_initiation"
+
+actions:
+  - type: suggest
+    message: |
+      ## Debug Workflow Initiation
+
+      I'll help you debug this feature through a structured process. Let's start by gathering the necessary context:
+
+      1. **Issue Description**:
+         - What's the expected behavior?
+         - What's the actual behavior observed?
+         - Under what conditions does the bug occur?
+
+      2. **Relevant Files**:
+         - Component file: `{{component_file}}`
+         - Store/state management: `{{store_file}}`
+         - Test file: `{{test_file}}`
+         - Any other relevant files?
+
+      3. **Debug Approach**:
+         - First, I'll help you trace the data flow
+         - Then we'll set up logging/breakpoints at key points
+         - Next, we'll isolate the issue through systematic testing
+         - Finally, we'll implement and verify the fix
+
+      Let's start with understanding the exact nature of the bug you're experiencing.
+</rule>
+
+## Debug Process Stages
+
+When initiating a debug workflow, follow these structured stages:
+
+### 1. Problem Analysis
+- Define expected vs. actual behavior
+- Identify trigger conditions  
+- Understand state before and after the bug occurs
+- Check if the issue is reproducible
+
+### 2. Component Inspection
+- Review component rendering logic
+- Examine prop handling
+- Check useEffect dependencies and cleanup
+- Verify event handler implementations
+
+### 3. State Management Inspection
+- Trace data flow through state management
+- Verify store actions and reducers
+- Check for state mutation issues
+- Examine selector optimizations
+
+### 4. Test Evaluation
+- Review existing tests to understand why they pass
+- Identify missing test scenarios
+- Add test cases that reproduce the bug
+- Fix implementation to address the bug
+
+### 5. Solution Implementation
+- Make targeted changes to fix the issue
+- Document the root cause
+- Add regression tests
+- Update documentation with any lessons learned
+
+## Implementation Notes
+
+This rule should be used when:
+- Tests are passing but the feature behaves unexpectedly
+- There's a mismatch between test coverage and actual usage patterns
+- Edge cases are encountered in real usage
+- Visual or interaction bugs appear that aren't covered by tests
+
+The debugging process should be systematic and incremental, focusing on understanding the issue before implementing fixes.

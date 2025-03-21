@@ -1,0 +1,10 @@
+---
+name: stripe-best-practices.mdc
+description: Best practices for integrating Stripe payments
+globs: **/*.{ts,tsx,js}
+---
+
+- Use Stripe Elements for secure and customizable payment forms.
+- Implement server-side validation and error handling for payment processing.
+- Utilize Stripe's SCA (Strong Customer Authentication) for compliance.
+- Set up webhooks for real-time payment status updates. 

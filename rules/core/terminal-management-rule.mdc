@@ -1,0 +1,58 @@
+---
+description: Rule to manage terminal creation and prevent too many open terminals
+globs: **/*.*
+alwaysApply: true
+---
+
+# Terminal Management Rule
+
+<rule>
+name: terminal_management
+description: Checks for existing terminals before creating new ones
+filters:
+  - type: intent
+    pattern: "create_terminal"
+  - type: action
+    pattern: "terminal_open"
+
+actions:
+  - type: execute
+    command: |
+      # Get the number of open terminals
+      TERMINAL_COUNT=$(lsof -a -c code -d DEV | grep pts | wc -l)
+      echo "Current open terminals: $TERMINAL_COUNT"
+      
+      # If more than 3 terminals are open, don't create a new one
+      if [ $TERMINAL_COUNT -ge 3 ]; then
+        echo "WARNING: Multiple terminals already open. Reusing existing terminal."
+        exit 1
+      else
+        echo "OK to create a new terminal."
+        exit 0
+      fi
+    onSuccess:
+      - type: allow
+        message: "Creating a new terminal (current count: {{output}})"
+    onFailure:
+      - type: suggest
+        message: |
+          I notice there are already multiple terminals open. Instead of creating a new terminal:
+          
+          1. I'll use an existing terminal for this command
+          2. You can close unused terminals by clicking the trash icon in the terminal panel
+          3. Run `exit` in terminals you no longer need
+
+  - type: suggest
+    message: |
+      Before running commands in a terminal, I'll check if we can use existing terminals to avoid cluttering your workspace. Terminal management helps keep your environment organized and reduces resource usage.
+
+examples:
+  - input: "Let's open a terminal and install the dependencies"
+    output: "I'll use an existing terminal to install the dependencies instead of creating a new one."
+  - input: "Run this command in a new terminal"
+    output: "I'll run this command in an existing terminal to avoid creating too many terminals."
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

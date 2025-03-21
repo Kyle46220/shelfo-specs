@@ -1,0 +1,137 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Guidelines for preventing type-related errors
+globs: **/*.ts, **/*.tsx
+alwaysApply: true
+---
+# Type Safety Error Prevention
+
+## Common Errors and Prevention
+
+### 1. Undefined Property Access
+
+```typescript
+// PREVENT: Undefined property access
+// BAD
+const value = obj.deeply.nested.property;
+
+// GOOD
+const value = obj?.deeply?.nested?.property ?? defaultValue;
+```
+
+### 2. Array Map on Potentially Undefined
+
+```typescript
+// PREVENT: Map on undefined
+// BAD
+const items = data.items.map(item => item.name);
+
+// GOOD
+const items = data?.items?.map(item => item.name) ?? [];
+```
+
+### 3. Type Assertion Safety
+
+```typescript
+// PREVENT: Unsafe type assertions
+// BAD
+const config = value as Config;
+
+// GOOD
+function isConfig(value: unknown): value is Config {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'property' in value
+  );
+}
+
+if (isConfig(value)) {
+  const config = value; // Safely typed
+}
+```
+
+### 4. Null Object Pattern
+
+```typescript
+// PREVENT: Null reference errors
+// GOOD: Use null object pattern
+const NULL_CONFIG: Config = {
+  dimensions: { width: 0, height: 0, depth: 0 },
+  appearance: { color: 'default', material: 'default' },
+  features: { legs: 'default', backPanel: false }
+};
+
+function getConfig(): Config {
+  return store.config ?? NULL_CONFIG;
+}
+```
+
+## Runtime Checks
+
+```typescript
+// PREVENT: Runtime type errors
+function validateConfig(config: unknown): config is Config {
+  if (!config || typeof config !== 'object') return false;
+  
+  const c = config as any;
+  return (
+    typeof c.dimensions === 'object' &&
+    typeof c.dimensions.width === 'number' &&
+    typeof c.dimensions.height === 'number' &&
+    typeof c.dimensions.depth === 'number'
+  );
+}
+```
+
+## Error Boundaries
+
+```typescript
+// PREVENT: Uncaught type errors
+class TypeSafetyBoundary extends React.Component {
+  state = { hasError: false };
+  
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback />;
+    }
+    return this.props.children;
+  }
+}
+```
+
+## Testing Requirements
+
+```typescript
+describe('Type Safety', () => {
+  it('should handle undefined properties safely', () => {
+    const obj = {};
+    expect(() => 
+      getNestedValue(obj, 'deeply.nested.path')
+    ).not.toThrow();
+  });
+  
+  it('should validate configs correctly', () => {
+    const invalidConfig = { dimensions: 'wrong' };
+    expect(validateConfig(invalidConfig)).toBe(false);
+  });
+});
+```
+
+## Implementation Checklist
+
+- [ ] All property access uses optional chaining
+- [ ] Array operations check for undefined
+- [ ] Type guards are implemented for complex types
+- [ ] Null object patterns are used where appropriate
+- [ ] Runtime validation is in place
+- [ ] Error boundaries catch type errors
+- [ ] Edge cases are tested

@@ -1,0 +1,164 @@
+---
+description: TDD and Unit Testing Standards, applicable to all test-related files and implementation files.
+globs: **/*.steps.ts, **/*.test.ts, **/*.test.tsx, **/*.ts, **/*.tsx, **/*.feature
+alwaysApply: false
+---
+
+# Project Development Rules
+
+## Related Rules
+- **@.cursor/rules/domains/story-rules.mdc**: Must be applied before this rule during story creation
+- **@.cursor/rules/processes/prevent-redundancy.mdc**: Must be applied during implementation to avoid duplicate code
+- **@.cursor/rules/processes/file-change-actions.mdc**: Must be applied after each code change
+- **@.cursor/rules/processes/feature-completion-documentation.mdc**: Must be applied after scenario completion
+
+## TDD Development Standards
+- Follow the three steps of TDD:
+  1. Write Tests First (Red)
+     - Write tests before implementing code
+     - Tests should fail initially
+     - Test code should be simple and clear
+     - Test only one feature at a time
+  
+  2. Implement Code (Green)
+     - Quickly implement functionality to make tests pass
+     - Prioritize the simplest implementation
+     - Don't worry about code quality and performance yet
+     - Focus on satisfying current test cases
+  
+  3. Refactor and Optimize (Refactor)
+     - Refactor code after tests pass
+     - Improve code design and quality
+     - Eliminate duplicate code
+     - Ensure tests still pass after refactoring
+
+## BDD Testing Standards
+- Feature File Organization
+  - all features files stored in features/
+  - Files end with .feature
+  - Organize directory structure by business function modules
+  - One feature file corresponds to one main business function
+  - support files should be stored in features/support/
+
+- Gherkin Syntax Standards
+  - Write Gherkin statements in English
+  - Feature describes business function modules
+  - Scenario describes specific business scenarios
+  - Follow the Given-When-Then structure:
+    - Given: Prepare test preconditions
+    - When: Execute the operation being tested
+    - Then: Verify test results
+    - And: Supplement to connect similar steps
+    - But: Supplement for contrasting steps
+
+- Steps File Organization
+  - Step definition files end with .steps.ts
+  - Place in the same directory as feature files
+  - Split steps files by functional modules
+  - Step implementations should be simple and clear
+
+- Scenario Writing Standards
+  - One scenario tests one business process
+  - Scenario descriptions should be clear and specific
+  - Avoid dependencies between scenarios
+  - Use Background appropriately to share preconditions
+  - Use Scenario Outline and Examples appropriately
+  - Strictly follow the single scenario development process:
+    * Define and develop only one scenario at a time
+    * Don't start a new scenario before completing the current one
+    * Definition of a completed scenario:
+      - Scenario step definitions are implemented
+      - Related unit tests are written and passing
+      - Functional code is implemented and passes tests
+      - Code has undergone necessary refactoring
+      - Documentation is updated
+      - Changes are committed to the code repository
+    * Development sequence:
+      1. Define a single scenario
+      2. Implement step definitions for that scenario
+      3. Write related unit tests
+      4. Implement functional code
+      5. Run and ensure all tests pass
+      6. Perform necessary refactoring
+      7. Start the next scenario only after completion
+
+- Hooks Usage Standards
+  - Before/After hooks handle environment setup and cleanup
+  - BeforeAll/AfterAll handle global settings
+  - Manage hooks for different scenarios with tags
+  - Keep hooks lightweight and independent
+
+- Data Management
+  - Use Examples tables to manage test data
+  - Use fixtures to store test data files
+  - Avoid hardcoding data in feature files
+  - Data preparation and cleanup should be complete
+
+- Test Environment
+  - Use environment variables for environment configuration
+  - Manage different environment configurations through profiles
+  - Maintain test environment independence
+  - Document environment-related settings
+
+## Unit Testing Standards
+- Test File Naming
+  - Test files end with .test.ts
+  - Test files have the same name as the files being tested
+  - Test files are in the same directory as the files being tested
+
+- Test Structure Organization
+  - Use describe to describe test units
+  - Use it/test to describe test cases
+  - Follow the AAA pattern:
+    - Arrange: Prepare test data and environment
+    - Act: Execute the code being tested
+    - Assert: Verify test results
+
+- Test Case Writing
+  - Each test case tests only one feature point
+  - Test case descriptions should be clear and specific
+  - Use meaningful test data
+  - Avoid dependencies between test cases
+  - Use setup and teardown appropriately
+
+- Test Coverage Requirements
+  - Core business logic coverage > 90%
+  - Utility function coverage > 80%
+  - Branch coverage > 80%
+  - UI component coverage > 70%
+
+- Mock and Stub Usage Standards
+  - Use Mocks appropriately to isolate external dependencies
+  - Use Stubs to simulate data and behavior
+  - Mock objects should comply with interface contracts
+  - Avoid excessive mocking
+
+- Asynchronous Testing Standards
+  - Correctly use async/await
+  - Handle Promises and callbacks
+  - Set reasonable test timeouts
+  - Clean up asynchronous resources
+
+- Test Code Quality
+  - Test code should be as clean as production code
+  - Avoid magic numbers in tests
+  - Extract repeated test code into helper functions
+  - Use meaningful variable names
+
+## Best Practices
+- Write tests before implementation
+- Take small steps, commit frequently
+- Refactor promptly, keep code clean
+- Tests should be fast, independent, and repeatable
+- Perform regular regression testing
+- Run all tests during continuous integration
+- Regularly check test coverage reports
+
+- BDD-Related Best Practices
+  - Business and development personnel jointly review feature files
+  - Maintain business relevance and readability of Gherkin language
+  - Regularly refactor and optimize test scenarios
+  - Scenarios should cover key business processes
+  - Use tags appropriately to organize and manage scenarios
+  - Execute all BDD tests during continuous integration
+  - Regularly check scenario coverage

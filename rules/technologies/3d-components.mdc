@@ -1,0 +1,24 @@
+---
+description: Guidelines for developing 3D components with React Three Fiber
+globs: **/configurator/components/3d/**/*.*
+alwaysApply: false
+---
+# 3D Development Guidelines
+
+For comprehensive documentation on 3D component architecture and implementation,
+refer to [3D Components Section in Technical Documentation](mdc:../docs/technical.md#1-3d-components).
+
+Additional guidelines not covered in technical documentation:
+
+- Profile and optimize render performance regularly
+- Use geometry instancing for repeated elements
+- Implement level-of-detail (LOD) for complex models
+- Add proper dispose() calls in useEffect cleanup
+- Consider implementing WebGL feature detection
+- Use compressed textures where supported
+- Implement proper mouse/touch interaction handling
+- Add loading states for model initialization
+- Consider implementing object pooling for particle systems
+- Document any custom shaders thoroughly
+- Implement proper error recovery for WebGL context loss
+- Add performance monitoring for critical 3D operations

@@ -1,0 +1,32 @@
+---
+description: Prevent redundant implementation of functionality
+globs: */*.*
+alwaysApply: false
+---
+
+# Prevent redundant implementation of functionality
+
+## Related Rules
+- **@.cursor/rules/domains/project-rules.mdc**: Provides TDD/BDD standards for implementation
+- **@.cursor/rules/processes/file-change-actions.mdc**: Must be applied after each code change
+- **@instructions/bdd-workflow-diagram.md**: Defines when this rule should be applied in the workflow (steps 4 and 5)
+
+## When to Apply
+This rule should be applied:
+1. Before implementing any new functionality
+2. During the BDD Implementation phase (step 4)
+3. During the Unit Testing phase (step 5)
+
+## Guidelines
+
+1. **Check for Existing Implementation**  
+   - Before implementing new functionality, the agent must search the codebase for similar or identical implementations.  
+   - Use project-wide search tools to verify if the functionality already exists.
+
+2. **Avoid Redundancy**  
+   - If an implementation is found, the agent should reference it instead of creating a duplicate.  
+   - If no implementation is found, proceed with the task.
+
+3. **Document Findings**  
+   - Log the results of the search in a comment or documentation file.  
+   - Include references to any existing implementations.

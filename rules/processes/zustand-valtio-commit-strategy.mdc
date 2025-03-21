@@ -1,0 +1,189 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Commit strategy guidelines for Zustand to Valtio migration
+globs: **/configurator/store/**/*.*, **/configurator/hooks/**/*.*, **/configurator/components/**/*.*
+alwaysApply: true
+---
+
+# Zustand to Valtio Migration Commit Strategy
+
+This rule defines the commit patterns and requirements for the Zustand to Valtio state management migration process. Following these guidelines will ensure a clean, traceable development history and maintain application stability throughout the transition.
+
+## Commit Organization
+
+### Phase-Based Structure
+
+Each commit should be tagged with the relevant migration phase:
+
+- `[Setup]` - Initial infrastructure setup, dependencies, utilities
+- `[Store]` - Core store migration from Zustand to Valtio
+- `[Component]` - Component updates to use Valtio state
+- `[Cleanup]` - Removing Zustand dependencies and optimization
+- `[Docs]` - Documentation updates related to migration
+
+### Feature-Based Commits
+
+- Each commit should represent a single logical change
+- Keep commits focused on a specific part of the migration
+- Always ensure the application builds successfully before committing
+
+## When to Commit
+
+Create commits at these specific milestones:
+
+| Milestone | Commit Stage |
+|-----------|--------------|
+| BDD Scenario | After completing a BDD scenario implementation |
+| Store Migration | After each store or store section conversion |
+| Component Migration | After each component or related component group migration |
+| Test Implementation | After each successful test suite implementation |
+| Documentation | After migration guide or example updates |
+| Refactoring | After code optimization or cleanup work |
+
+## Commit Message Format
+
+### Required Structure
+
+```
+[Phase] Short description of change
+
+- Detailed bullet points about changes
+- Explanation of technical decisions if necessary
+- Reference to related user story or scenario
+
+Related: STORY-XXX
+```
+
+### Examples
+
+```
+[Setup] Add Valtio dependency and core utilities
+
+- Add valtio and valtio/utils packages
+- Create devtools connection utility
+- Add proxy store type definitions
+- Set up store creation pattern
+
+Related: STORY-123
+```
+
+```
+[Store] Migrate configurator dimensions store to Valtio
+
+- Create proxy-based store for dimensions section
+- Implement getters for computed dimension values
+- Add serialization methods for Medusa integration
+- Test coverage for all dimension state operations
+
+Related: STORY-124
+```
+
+```
+[Component] Update DimensionsPanel to use Valtio store
+
+- Convert useConfigStore to useSnapshot pattern
+- Update event handlers to use direct mutations
+- Add optimization for selective re-rendering
+- All tests passing for dimensions panel
+
+Related: STORY-124, Scenario: "Adjust product dimensions"
+```
+
+```
+[Cleanup] Remove Zustand dependency from configurator module
+
+- Delete Zustand store implementation
+- Remove create-zustand package dependency
+- Update imports in all components
+- Verify all tests passing after removal
+
+Related: STORY-125
+```
+
+## Pre-Commit Validation Requirements
+
+Before committing changes, ensure:
+
+1. **Functionality Validation**
+   - All migrated features work identically to pre-migration
+   - No regression in existing functionality
+   - UI behaves consistently with previous implementation
+
+2. **Test Coverage**
+   - All existing tests pass with Valtio implementation
+   - New tests added for Valtio-specific behaviors
+   - BDD scenarios continue to pass as components are migrated
+
+3. **Build Verification**
+   - Application builds without errors or warnings
+   - No console errors appear during normal operation
+   - Optimized builds function as expected
+
+4. **Performance Check**
+   - State updates perform as well or better than Zustand version
+   - No unnecessary re-renders introduced
+   - Memory usage remains stable
+
+## Transition Period Considerations
+
+During the hybrid phase when both Zustand and Valtio are present:
+
+1. **State Synchronization**
+   - Ensure bidirectional sync between Zustand and Valtio stores
+   - Document sync mechanisms in commit messages
+   - Test both state systems during transition
+
+2. **Incremental Feature Flags**
+   - Use feature flags to control which state system is active
+   - Document flag usage in commit messages
+   - Ensure flags don't remain in production code
+
+3. **Clear Migration Status**
+   - Include migration progress in commit messages
+   - Tag components as "migrated" or "pending"
+   - Update status documentation with each significant commit
+
+## Visual Commit History Example
+
+Below is an example of how the commit history should appear during migration:
+
+```
+* a4b2c9e [Cleanup] Remove Zustand dependency from project
+* f7d0e3a [Component] Migrate MaterialSelector to Valtio store
+* 2c9b4d6 [Component] Migrate ColorPicker to Valtio store
+* 8e6a1b5 [Component] Migrate ShelfPositioner to Valtio store
+* 5d7f9c3 [Component] Migrate DimensionsPanel to Valtio store
+* 3a1b9e7 [Store] Add computed properties for pricing calculations
+* 0e2d5f1 [Store] Implement Valtio store for appearance settings
+* 9c8f7b6 [Store] Implement Valtio store for dimensions
+* 4d3e5f2 [Setup] Create Valtio store structure and utilities
+* 1a2b3c4 [Setup] Add Valtio dependency and documentation
+```
+
+## Rollback Procedures
+
+If issues are discovered after migration:
+
+1. Document the issue thoroughly in the issue tracker
+2. Create a branch for the fix with naming pattern `fix/valtio-migration-issue-XXX`
+3. If the issue is critical, consider a targeted rollback of just the problematic component
+4. Include detailed explanation in commit messages for any rollbacks
+5. Add regression tests to prevent recurrence
+
+## Example Rollback Commit
+
+```
+[Rollback] Temporarily revert ColorPicker to Zustand implementation
+
+- Revert ColorPicker.tsx to previous version
+- Add synchronization between Valtio and Zustand for color state
+- Document performance issue in ISSUE-127
+- Will address in separate PR with optimized implementation
+
+Related: ISSUE-127
+```
+

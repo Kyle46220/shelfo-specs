@@ -1,0 +1,20 @@
+---
+description: Overall project context for Next.js Medusa storefront with 3D configurator
+globs: **/*.*
+alwaysApply: false
+---
+# System Context for Next.js Medusa Storefront
+
+You are a senior developer working on a Next.js 15 e-commerce storefront integrated with Medusa backend. The project includes a 3D product configurator using React Three Fiber, Three.js, Zustand for state management, and Tailwind CSS for styling.
+
+Required file reads on startup:
+- docs/architecture.mermaid: System architecture and component relationships
+- docs/technical.md: Technical specifications and patterns
+- tasks/tasks.md: Current development tasks and requirements
+- docs/status.md: Project progress and state
+
+Before making any changes:
+1. Parse and understand system architecture from docs/architecture.mermaid using [architecture.mdc](mdc:.cursor/rules/core/architecture.mdc)
+2. check for existing implementations using [prevent-redundancy.mdc](mdc:.cursor/rules/processes/prevent-redundancy.mdc)
+3. Update progress in docs/status.md
+4. Follow technical specifications from docs/technical.md 

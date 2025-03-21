@@ -1,0 +1,285 @@
+---
+description: Performance optimization guidelines for 3D components in the configurator
+globs: **/configurator/components/3d/**/*.*
+alwaysApply: true
+---
+---
+description: Performance optimization guidelines for 3D components in the configurator
+globs: **/configurator/components/3d/**/*.*
+alwaysApply: true
+---
+# 3D Performance Optimization Guidelines for React Three Fiber
+
+## Rendering Optimization
+
+- Use memoization for materials with useTexture/useMemo:
+  ```jsx
+  // GOOD: Memoized material with useTexture
+  const [colorMap, normalMap, roughnessMap] = useTexture([
+    './wood.jpg',
+    './normal.jpg',
+    './roughness.jpg'
+  ]);
+  
+  const material = useMemo(() => {
+    return new MeshStandardMaterial({ 
+      map: colorMap,
+      normalMap: normalMap,
+      roughnessMap: roughnessMap,
+      color
+    });
+  }, [colorMap, normalMap, roughnessMap, color]);
+  
+  // BAD: Material recreation on every render
+  return (
+    <mesh>
+      <meshStandardMaterial color={color} roughness={0.5} />
+    </mesh>
+  );
+  ```
+
+- Use built-in primitives and avoid recreating geometries:
+  ```jsx
+  // GOOD: Use built-in primitives with memoized args
+  const args = useMemo(() => [width, height, depth], [width, height, depth]);
+  
+  return <boxGeometry args={args} />;
+  
+  // BETTER: Use drei's built-in shapes
+  return <Box args={[width, height, depth]} />;
+  
+  // BAD: Creating new geometry in render
+  return (
+    <mesh>
+      <boxGeometry args={[width, height, depth]} />
+    </mesh>
+  );
+  ```
+
+- Implement proper cleanup with useEffect:
+  ```jsx
+  // GOOD: Resource cleanup with useEffect
+  const meshRef = useRef();
+  
+  useEffect(() => {
+    return () => {
+      const mesh = meshRef.current;
+      if (mesh) {
+        // Clean up geometry and materials
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(material => material.dispose());
+        } else if (mesh.material) {
+          mesh.material.dispose();
+        }
+      }
+    };
+  }, []);
+  
+  return <mesh ref={meshRef}>...</mesh>;
+  ```
+
+## Component Structure
+
+- Memoize components with React.memo:
+  ```jsx
+  // GOOD: Memoized component with consistent props
+  const Shelf = memo(({ width, depth, position, color }) => {
+    return (
+      <mesh position={position}>
+        <boxGeometry args={[width, 0.02, depth]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+    );
+  });
+  ```
+
+- Use instances for repeated elements:
+  ```jsx
+  // GOOD: Instanced meshes for repeated elements
+  return (
+    <instancedMesh args={[null, null, shelves.length]} ref={instancedMeshRef}>
+      <boxGeometry args={[1, 0.02, 1]} />
+      <meshStandardMaterial color={color} />
+    </instancedMesh>
+  );
+  
+  // In useEffect/useLayoutEffect
+  useLayoutEffect(() => {
+    if (instancedMeshRef.current) {
+      shelves.forEach((shelf, i) => {
+        matrix.setPosition(shelf.x, shelf.y, shelf.z);
+        instancedMeshRef.current.setMatrixAt(i, matrix);
+      });
+      instancedMeshRef.current.instanceMatrix.needsUpdate = true;
+    }
+  }, [shelves]);
+  ```
+
+- Use selective rendering with conditional components:
+  ```jsx
+  // GOOD: Conditional rendering
+  return (
+    <group>
+      {isVisible && <Shelf position={[0, 1, 0]} />}
+      <Legs data={legs} />
+    </group>
+  );
+  ```
+
+## Computation Optimization
+
+- Use useFrame effectively:
+  ```jsx
+  // GOOD: Optimized useFrame
+  const tick = useRef(0);
+  
+  useFrame((state, delta) => {
+    // Only update every 3rd frame for expensive operations
+    if (tick.current++ % 3 === 0) {
+      // Do expensive computation
+    }
+    
+    // Always run light updates
+    mesh.current.rotation.y += delta * 0.2;
+  });
+  ```
+
+- Leverage r3f's automatic memoization:
+  ```jsx
+  // GOOD: Let r3f handle prop changes
+  return (
+    <mesh
+      position={position} // R3F automatically handles updates efficiently
+      rotation={rotation}
+      scale={scale}
+    >
+      <boxGeometry />
+      <meshStandardMaterial color={color} />
+    </mesh>
+  );
+  ```
+
+- Use refs for values that don't need to trigger re-renders:
+  ```jsx
+  // GOOD: Use refs for frequently changing values
+  const rotationRef = useRef(0);
+  
+  useFrame(() => {
+    rotationRef.current += 0.01;
+    mesh.current.rotation.y = rotationRef.current;
+  });
+  ```
+
+## Performance with drei
+
+- Use drei's performance helpers:
+  ```jsx
+  // GOOD: Use drei's performance helpers
+  import { Detailed, AdaptiveDpr, AdaptiveEvents } from '@react-three/drei';
+  
+  return (
+    <>
+      <AdaptiveDpr pixelated />
+      <AdaptiveEvents />
+      <Detailed distances={[0, 10, 20]}>
+        <HighDetailModel /> {/* Closest */}
+        <MediumDetailModel /> {/* Mid-range */}
+        <LowDetailModel /> {/* Furthest */}
+      </Detailed>
+    </>
+  );
+  ```
+
+- Use drei's preloading:
+  ```jsx
+  // GOOD: Use drei's preloading for assets
+  import { useGLTF, useTexture, Preload } from '@react-three/drei';
+  
+  // In component
+  useGLTF.preload('/model.glb');
+  useTexture.preload(['/texture.jpg', '/normal.jpg']);
+  
+  // At app root
+  return (
+    <Canvas>
+      <Scene />
+      <Preload all />
+    </Canvas>
+  );
+  ```
+
+## Event Handling
+
+- Use r3f's built-in event system efficiently:
+  ```jsx
+  // GOOD: Efficient event handling
+  const [hovered, setHover] = useState(false);
+  
+  return (
+    <mesh
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHover(true);
+      }}
+      onPointerOut={() => setHover(false)}
+    >
+      <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
+    </mesh>
+  );
+  ```
+
+- Use drei's event optimization:
+  ```jsx
+  // GOOD: Use event optimization
+  import { Select } from '@react-three/drei';
+  
+  return (
+    <Select onChange={handleSelection}>
+      <mesh name="Item1">...</mesh>
+      <mesh name="Item2">...</mesh>
+    </Select>
+  );
+  ```
+
+## Camera and Controls
+
+- Optimize controls:
+  ```jsx
+  // GOOD: Optimized controls
+  import { OrbitControls } from '@react-three/drei';
+  
+  return (
+    <OrbitControls
+      makeDefault
+      minPolarAngle={Math.PI / 6}
+      maxPolarAngle={Math.PI / 2}
+      minDistance={3}
+      maxDistance={10}
+      enableDamping
+      dampingFactor={0.05}
+    />
+  );
+  ```
+
+- Use camera helpers:
+  ```jsx
+  // GOOD: Camera helpers
+  import { PerspectiveCamera, CameraShake } from '@react-three/drei';
+  
+  return (
+    <>
+      <PerspectiveCamera
+        makeDefault
+        position={[0, 2, 5]}
+        fov={45}
+      />
+      <CameraShake
+        maxYaw={0.01}
+        maxPitch={0.01}
+        maxRoll={0.01}
+        intensity={0.5}
+      />
+    </>
+  );
+  ```

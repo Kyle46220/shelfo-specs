@@ -1,0 +1,113 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Strategy for transitioning from Zustand to Valtio state management
+globs: **/store/**/*.*, **/hooks/use*Store.tsx, **/hooks/use*State.tsx
+---
+
+# Zustand to Valtio Migration Strategy
+
+This rule outlines the strategy for transitioning the 3D configurator state management from Zustand to Valtio.
+
+## Migration Phases
+
+### Phase 1: Preparation
+
+1. **Infrastructure Setup**
+   - Add Valtio dependency: `npm install valtio`
+   - Create core utilities in `src/modules/configurator/utils/valtio-utils.ts`:
+     - DevTools connection
+     - Persistence helpers
+     - Type definitions
+
+2. **Documentation & Standards**
+   - Follow patterns in `.cursor/rules/technologies/valtio-patterns.mdc`
+   - Use migration examples in `.cursor/rules/technologies/valtio-migration-examples.mdc`
+
+3. **Proof of Concept**
+   - Create small, isolated Valtio store before full migration
+
+### Phase 2: Core Store Migration
+
+1. **Store Structure Design**
+   - Flat organization
+   - Separate sections for configuration, UI state, and computation
+   - Computed values as getters
+   - Actions as methods
+
+2. **Implementation**
+   - Create the new Valtio-based configurator store
+   - Implement all state, getters, and actions
+   - Add tests for store behavior
+
+### Phase 3: Component Migration
+
+1. **Component Update Strategy**
+   - Identify all components using configurator state
+   - Group by feature area
+   - Prioritize based on complexity and dependencies
+
+2. **Migration Process for Each Component**
+   - Create a Valtio version alongside existing component
+   - Update imports and state access
+   - Update event handlers to use direct mutations
+   - Test component behavior
+   - Replace old component when verified
+
+3. **3D Components Migration**
+   - Update 3D components to use Valtio store
+   - Test for performance improvements
+   - Optimize with selective snapshot subscriptions
+
+### Phase 4: Cleanup & Optimization
+
+1. **Remove Zustand Dependencies**
+   - Remove Zustand package once all components migrated
+   - Clean up adapter or compatibility code
+
+2. **Performance Optimization**
+   - Audit component rendering performance
+   - Optimize state access patterns
+   - Implement selective subscriptions for complex components
+
+3. **Documentation Update**
+   - Update all technical documentation
+   - Provide examples of common patterns
+   - Document performance considerations
+
+## Commit Strategy
+
+1. **Feature-Based Commits**:
+   - Each commit should represent a single logical change
+   - Keep commits focused on a specific part of the migration
+   - Always ensure the application builds successfully before committing
+
+2. **When to Commit**:
+   - After completing a BDD scenario implementation
+   - After each store conversion
+   - After each component or group of related components migration
+   - After each successful test suite implementation
+   - After documentation updates
+   - After refactoring or optimization work
+
+3. **Commit Message Structure**:
+   ```
+   [Phase] Short description of change
+
+   - Detailed bullet points about changes
+   - Explanation of technical decisions if necessary
+   - Reference to related user story or scenario
+   ```
+
+## Success Criteria
+
+The migration will be considered successful when:
+
+1. All configurator state is managed through Valtio
+2. No Zustand dependencies remain in the codebase
+3. All tests pass with same or better performance
+4. Developers report improved development experience
+5. No regression in user experience

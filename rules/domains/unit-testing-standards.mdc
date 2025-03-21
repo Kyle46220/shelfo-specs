@@ -1,0 +1,200 @@
+---
+description: Ensures unit tests follow project standards and best practices
+globs: **/*.test.ts,**/*.test.tsx,**/*.test.js,**/*.test.jsx
+alwaysApply: true
+---
+
+# Unit Testing Standards Rule
+
+This rule ensures that all unit tests in the project follow established standards for naming, structure, organization, and quality.
+
+<rule>
+name: unit_testing_standards
+description: Enforces unit testing standards and best practices
+filters:
+  # Match test files
+  - type: file_extension
+    pattern: "\\.(test|spec)\\.(ts|tsx|js|jsx)$"
+  # Match test file creation/modification
+  - type: event
+    pattern: "^(file_create|file_update)$"
+
+actions:
+  # Check file naming conventions
+  - type: reject
+    conditions:
+      - pattern: "^(?!.*\\.test\\.(ts|tsx|js|jsx)$)"
+        message: "Test files must end with .test.{ts|tsx|js|jsx}"
+      
+  # Suggest proper test structure when creating new test files
+  - type: suggest
+    conditions:
+      - type: event
+        pattern: "file_create"
+    message: |
+      ## Test File Structure Reminder
+      
+      Remember to follow the standard test structure:
+      
+      ```typescript
+      import { describe, beforeEach, test, expect } from 'testing-library';
+      
+      // Import the component/function being tested
+      import { functionToTest } from './file-being-tested';
+      
+      describe('FunctionToTest', () => {
+        // Setup/teardown
+        beforeEach(() => {
+          // Prepare test environment
+        });
+        
+        // Test cases following AAA pattern
+        test('should perform specific behavior when given specific input', () => {
+          // Arrange
+          const testData = { /* meaningful test data */ };
+          
+          // Act
+          const result = functionToTest(testData);
+          
+          // Assert
+          expect(result).toEqual(expectedOutput);
+        });
+      });
+      ```
+
+  # Analyze test content for standards compliance
+  - type: analyze
+    message: |
+      Checking test file for compliance with unit testing standards:
+      
+      ### Naming Convention
+      - Test file should be named the same as the file it's testing, with .test extension
+      - Test file should be in the same directory as the file being tested
+      
+      ### Structure Organization
+      - Uses `describe` blocks to group related tests ✓/✗
+      - Uses `it` or `test` functions for individual test cases ✓/✗
+      - Follows AAA pattern (Arrange-Act-Assert) ✓/✗
+      
+      ### Test Case Quality
+      - Each test case tests only one feature point ✓/✗
+      - Test descriptions are clear and specific ✓/✗
+      - Uses meaningful test data ✓/✗
+      - Avoids dependencies between test cases ✓/✗
+      
+      ### Mocking Standards
+      - Uses mocks to isolate external dependencies ✓/✗
+      - Mock objects comply with interface contracts ✓/✗
+      - Avoids excessive mocking ✓/✗
+      
+      ### Asynchronous Testing
+      - Correctly uses async/await for asynchronous tests ✓/✗
+      - Sets reasonable test timeouts ✓/✗
+      - Cleans up asynchronous resources ✓/✗
+      
+      ### Code Quality
+      - Test code is clean and well-formatted ✓/✗
+      - Avoids magic numbers ✓/✗
+      - Extracts repeated code into helper functions ✓/✗
+      - Uses meaningful variable names ✓/✗
+
+  # Provide feedback on test coverage
+  - type: suggest
+    message: |
+      ## Coverage Requirements Reminder
+      
+      This project requires the following test coverage:
+      - Core business logic: > 90%
+      - Utility functions: > 80%
+      - Branch coverage: > 80%
+      - UI components: > 70%
+      
+      Remember to run `npm test -- --coverage` regularly to check your coverage levels.
+
+examples:
+  # Example of a compliant test file
+  - input: |
+      // user-service.test.ts
+      import { describe, beforeEach, it, expect } from 'testing-library';
+      import { UserService } from './user-service';
+      import { mockUserRepo } from '../test-helpers/mocks';
+      
+      describe('UserService', () => {
+        let userService: UserService;
+        let userRepo: typeof mockUserRepo;
+        
+        beforeEach(() => {
+          // Arrange - prepare test environment
+          userRepo = { ...mockUserRepo };
+          userService = new UserService(userRepo);
+        });
+        
+        it('should return user when valid ID is provided', async () => {
+          // Arrange
+          const userId = '123';
+          userRepo.findById.mockResolvedValue({ id: userId, name: 'Test User' });
+          
+          // Act
+          const result = await userService.getUserById(userId);
+          
+          // Assert
+          expect(result).toEqual({ id: userId, name: 'Test User' });
+          expect(userRepo.findById).toHaveBeenCalledWith(userId);
+        });
+        
+        it('should throw error when user is not found', async () => {
+          // Arrange
+          const userId = '456';
+          userRepo.findById.mockResolvedValue(null);
+          
+          // Act & Assert
+          await expect(userService.getUserById(userId)).rejects.toThrow('User not found');
+          expect(userRepo.findById).toHaveBeenCalledWith(userId);
+        });
+      });
+    output: "Valid test file that follows all standards"
+    
+  # Example of a non-compliant test file
+  - input: |
+      // bad-test.js
+      import { UserService } from './user-service';
+      
+      test('get user and update', () => {
+        const service = new UserService();
+        service.createUser('john', 'pass123');
+        const user = service.getUserByName('john');
+        service.updateUserEmail('john', 'john@example.com');
+        expect(user.email).toBe('john@example.com');
+      });
+    output: |
+      Issues detected:
+      - Test file naming doesn't match convention
+      - Missing describe blocks for organization
+      - Test does multiple things in one test case
+      - Test has dependencies between operations
+      - No separation of AAA pattern
+      - No proper mocking of dependencies
+      - Using magic strings instead of meaningful constants
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
+
+## How to Use This Rule
+
+This rule will automatically:
+
+1. Check that test files follow the naming convention (.test.{ts|tsx|js|jsx})
+2. Suggest proper test structure when creating new test files
+3. Analyze test content for compliance with the specified standards
+4. Remind developers about coverage requirements
+
+## Best Practices Reminders
+
+- Write tests before implementation (TDD approach)
+- Take small steps and commit frequently
+- Refactor promptly to keep code clean
+- Ensure tests are fast, independent, and repeatable
+- Run regression tests regularly
+- Check coverage reports to identify untested code

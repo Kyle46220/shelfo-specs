@@ -1,0 +1,88 @@
+---
+description: Standards for creating and organizing Cursor rules
+globs: .cursor/rules/**/*.mdc
+alwaysApply: true
+---
+
+# Cursor Rule Standards
+
+<rule>
+name: cursor_rule_standards
+description: Enforces best practices for creating and organizing Cursor rules
+filters:
+  - type: file_extension
+    pattern: "\\.mdc$"
+  - type: path
+    pattern: "\\.cursor/rules/"
+  - type: event
+    pattern: "file_create|file_modify"
+
+actions:
+  - type: validate
+    conditions:
+      - pattern: "^---\\s*\\ndescription:\\s*.+\\s*\\nglobs:\\s*.+\\s*\\nalwaysApply:\\s*(true|false)\\s*\\n---"
+        message: "Rules must start with proper frontmatter including description, globs, and alwaysApply properties"
+      
+      - pattern: "<rule>\\s*\\nname:\\s*[a-z0-9_]+\\s*\\ndescription:\\s*.+"
+        message: "Each rule must have a name (snake_case) and description within <rule> tags"
+
+  - type: suggest
+    message: |
+      ## Rule Creation Best Practices
+      
+      ### Structure
+      - Use consistent frontmatter with description, globs, and alwaysApply
+      - Organize rules by domain/concern (e.g., code-style, error-prevention)
+      - Keep each rule focused on a single responsibility
+      - Use clear, descriptive rule names in snake_case
+      
+      ### Content
+      - Provide clear descriptions for both the file and individual rules
+      - Use specific glob patterns to target relevant files
+      - Include examples of good and bad patterns when applicable
+      - Establish appropriate scope (avoid rules that are too broad)
+      
+      ### Actions
+      - Use appropriate action types (validate, suggest, reject, transform)
+      - Provide helpful error messages that explain how to fix issues
+      - Include examples of correct implementations
+      - Consider impact on workflow (reject only for critical issues)
+      
+      ### Maintenance
+      - Version your rules with comments or version fields
+      - Group related rules in the same file
+      - Document the purpose of each rule file
+      - Keep rules up to date with project evolution
+
+examples:
+  - input: |
+      ---
+      description: 
+      globs: 
+      alwaysApply: true
+      ---
+      # My Rule
+    output: |
+      ---
+      description: Code style rules for TypeScript files
+      globs: **/*.ts,**/*.tsx
+      alwaysApply: false
+      ---
+      # TypeScript Coding Standards
+      
+      <rule>
+      name: typescript_naming_conventions
+      description: Enforces consistent naming conventions for TypeScript code
+      filters:
+        - type: file_extension
+          pattern: "\\.(ts|tsx)$"
+      
+      actions:
+        - type: validate
+          conditions:
+            - pattern: "(?:class|interface|type)\\s+([A-Z][a-zA-Z0-9]*)\\s*[{<]"
+              message: "Classes, interfaces, and types must use PascalCase"
+            - pattern: "(?:function|const|let|var)\\s+([a-z][a-zA-Z0-9]*)\\s*[({=:]"
+              message: "Variables and functions must use camelCase"
+      </rule>
+</rule>

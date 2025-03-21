@@ -1,0 +1,10 @@
+---
+name: react-best-practices.mdc
+description: Best practices for React development
+globs: **/*.{ts,tsx,js,jsx}
+---
+
+- Use functional components with hooks instead of class components.
+- Implement proper state management using Context API or state management libraries.
+- Utilize memoization techniques like `useMemo` and `useCallback` for performance optimization.
+- Follow component composition patterns for better reusability. 

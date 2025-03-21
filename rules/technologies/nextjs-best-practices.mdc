@@ -1,0 +1,10 @@
+---
+name: nextjs-best-practices.mdc
+description: Best practices for Next.js applications and routing
+globs: **/*.{ts,tsx}
+---
+
+- Use the App Router for improved performance and simpler data fetching.
+- Implement server-side rendering for SEO benefits.
+- Utilize Next.js Image component for optimized image loading.
+- Leverage Next.js API routes for serverless functions. 

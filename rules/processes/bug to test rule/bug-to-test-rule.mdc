@@ -1,0 +1,135 @@
+---
+description: Rule for automatically documenting and adding test cases for discovered bugs
+globs: **/*.{ts,tsx,js,jsx}
+alwaysApply: false
+precedence: 30
+---
+
+# Bug-to-Test Documentation Rule
+
+## Purpose
+This rule ensures that all discovered bugs are properly documented and corresponding test cases are added to prevent regression, following project TDD standards.
+
+<rule>
+name: bug_to_test_documentation
+description: Documents bugs and creates test cases when bugs are identified and fixed
+filters:
+  - type: content
+    pattern: "(?i)(found|discovered|identified|fixed) (?:a|the)? bug"
+  - type: intent
+    pattern: "bug_identification"
+
+actions:
+  - type: suggest
+    message: |
+      ## Bug Documentation and Test Creation
+
+      I'll help you document this bug and create a test case following our TDD standards.
+
+      ### 1. Bug Documentation
+
+      Please provide:
+      - Expected behavior:
+      - Actual behavior:
+      - Root cause:
+      - Fix implemented:
+
+      ### 2. Test Case Creation
+
+      Following our project's TDD standards, we should create:
+      - A unit test that reproduces the bug
+      - A test that verifies the fix works
+
+      Would you like me to:
+      1. Help document this bug in a structured format
+      2. Create a unit test that reproduces the bug
+      3. Update your feature's acceptance criteria
+</rule>
+
+## Implementation
+
+When a bug is identified during development or debugging, follow these steps to properly document and test it according to project standards:
+
+### 1. Bug Documentation Template
+
+```markdown
+## Bug Report: [Short Bug Description]
+
+**Component/Feature**: [Feature Name]
+
+**Expected Behavior**:
+[Describe what should have happened]
+
+**Actual Behavior**:
+[Describe what actually happened]
+
+**Root Cause**:
+[Technical explanation of what caused the bug]
+
+**Fix**:
+[Description of how the bug was fixed]
+
+**Prevention**:
+[How this type of bug can be prevented in the future]
+```
+
+### 2. Test Case Template
+
+Following the project's TDD standards from project-rules.mdc, create a test that:
+
+```typescript
+describe('[Component/Feature]', () => {
+  describe('when [condition that triggers bug]', () => {
+    // Arrange
+    beforeEach(() => {
+      // Setup code to reproduce the bug
+    });
+
+    it('should [expected behavior that was not happening]', () => {
+      // Act
+      // Code that triggers the bug
+      
+      // Assert
+      // Verification that the fix works
+    });
+  });
+});
+```
+
+### 3. Acceptance Criteria Update
+
+Update the feature's acceptance criteria in the story.md file:
+
+```markdown
+- [x] [Original acceptance criterion]
+- [x] Handles edge case: [description of bug scenario]
+```
+
+### 4. Documentation Update
+
+1. Add the bug to a bugs.md file in the feature's documentation
+2. Update the implementation notes to mention the edge case
+3. If applicable, add the bug scenario to the feature's examples
+
+## Best Practices
+
+- Write tests that specifically target the bug scenario
+- Make sure tests fail before applying the fix (Red phase of TDD)
+- Ensure tests pass after applying the fix (Green phase of TDD)
+- Refactor both the fix and the tests if needed (Refactor phase of TDD)
+- Link the bug documentation to the specific commit that fixes it
+- Add comments in the code explaining the fix and pointing to the test
+
+## Connection to TDD Process
+
+This rule enforces the full TDD cycle even for bugs discovered later:
+
+1. **Red**: Document the bug and write a failing test that reproduces it
+2. **Green**: Implement the fix to make the test pass
+3. **Refactor**: Clean up both the fix and the test
+
+Following this process ensures that:
+- All bugs are properly documented
+- Regression tests prevent the bug from reappearing
+- The team learns from the bug to improve future implementations
+- The bug-fixing process follows the same quality standards as feature development

@@ -1,0 +1,139 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Prevents duplicate feature implementations by enforcing systematic checks
+globs: "**/*.feature", "**/*.ts", "**/*.tsx"
+alwaysApply: true
+---
+
+# Feature Duplication Prevention Rule
+
+<rule>
+name: prevent_feature_duplication
+description: Ensures thorough checking for existing implementations before creating new features
+filters:
+  - type: event
+    pattern: "file_create|file_modify"
+  - type: path
+    pattern: "features/.*\\.feature$|src/.*\\.(ts|tsx)$"
+  - type: intent
+    pattern: "implement_feature|create_component"
+
+actions:
+  - type: validate
+    conditions:
+      - pattern: "^# Implementation Analysis:[\\s\\S]*# Decision:"
+        message: "Feature file must include implementation analysis section"
+      - pattern: "# Search Date: \\d{4}-\\d{2}-\\d{2}"
+        message: "Must include search date in analysis"
+
+  - type: execute
+    command: |
+      # Run feature duplication check
+      ts-node scripts/check-existing-features.ts "${FEATURE_DESCRIPTION}"
+    onSuccess:
+      - type: suggest
+        message: |
+          Analysis complete. Review the generated report at feature-analysis.md
+          
+          Next steps:
+          1. Review similar implementations found
+          2. Document your decision in the feature file
+          3. Update cross-references if reusing code
+    onFailure:
+      - type: reject
+        message: "Feature duplication check failed. Please run manually and document findings."
+
+  - type: suggest
+    message: |
+      ## Required Documentation
+      
+      Add to your feature file:
+      ```gherkin
+      # Implementation Analysis:
+      # Search Date: [YYYY-MM-DD]
+      # Existing Components: [List]
+      # Decision: [Reuse/Modify/New]
+      # Rationale: [Explanation]
+      ```
+
+  - type: analyze
+    message: |
+      Checking implementation for:
+      1. Documentation completeness
+      2. Cross-references to existing code
+      3. Proper reuse patterns
+      4. Updated test coverage
+
+examples:
+  - input: |
+      Feature: Product Configuration
+      # Implementation Analysis:
+      # Search Date: 2024-03-15
+      # Existing Components: 
+      #   - src/components/ConfigPanel.tsx (High)
+      #   - src/hooks/useConfig.ts (Medium)
+      # Decision: Modify
+      # Rationale: Existing ConfigPanel can be extended
+      
+      Scenario: Configure product options
+    output: "Valid feature file with complete analysis"
+
+  - input: |
+      Feature: Product Configuration
+      
+      Scenario: Configure product options
+    output: |
+      Error: Missing implementation analysis section.
+      Add required documentation:
+      # Implementation Analysis:
+      # Search Date: [YYYY-MM-DD]
+      ...
+
+metadata:
+  version: "1.0"
+  priority: "high"
+  category: "code-quality"
+  dependencies:
+    - "typescript-guidelines"
+    - "bdd-workflow"
+</rule>
+
+## Usage Guidelines
+
+1. Before implementing any feature:
+   ```bash
+   npm run check-feature "Feature description"
+   ```
+
+2. Document findings in feature file:
+   ```gherkin
+   # Implementation Analysis:
+   # Search Date: 2024-03-15
+   # Existing Components: [List]
+   # Decision: [Choice]
+   # Rationale: [Explanation]
+   ```
+
+3. Follow up actions:
+   - For "Reuse": Add cross-references
+   - For "Modify": Document changes
+   - For "New": Create reusable components
+
+## Best Practices
+
+1. Always run the check before implementation
+2. Document all findings thoroughly
+3. Prefer reuse over new implementation
+4. Keep documentation up to date
+5. Regular codebase audits
+
+## Integration Points
+
+- BDD Workflow: Pre-implementation check
+- Code Review: Verify documentation
+- CI/CD: Automated validation
+- Documentation: Cross-references

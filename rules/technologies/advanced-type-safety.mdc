@@ -1,0 +1,243 @@
+# Advanced Type Safety Guidelines
+
+---
+description: Advanced TypeScript patterns for Next.js, Three.js, and external integrations
+globs: **/*.ts, **/*.tsx
+alwaysApply: true
+---
+
+## Integration Types
+
+### Medusa Integration
+```typescript
+// GOOD: Type-safe Medusa client usage
+interface MedusaProduct extends Product {
+  metadata: {
+    configuratorOptions?: ConfiguratorOptions;
+    modelUrl?: string;
+  };
+}
+
+// Type guard for Medusa products
+function isMedusaProduct(product: unknown): product is MedusaProduct {
+  return (
+    typeof product === 'object' &&
+    product !== null &&
+    'metadata' in product &&
+    typeof (product as MedusaProduct).metadata === 'object'
+  );
+}
+```
+
+### Builder.io Integration
+```typescript
+// GOOD: Builder.io content typing
+interface BuilderContent<T = any> {
+  data: T;
+  id: string;
+  name: string;
+  published: string;
+}
+
+// Type-safe content fetching
+async function getBuilderContent<T>(modelName: string): Promise<BuilderContent<T> | null> {
+  try {
+    const content = await builder.get(modelName).promise();
+    return content as BuilderContent<T>;
+  } catch (error) {
+    handleBuilderError(error);
+    return null;
+  }
+}
+```
+
+## React Three Fiber Safety
+
+### Resource Management
+```typescript
+// GOOD: Safe Three.js cleanup
+function useModelCleanup(model: THREE.Object3D | null) {
+  useEffect(() => {
+    return () => {
+      if (!model) return;
+      
+      // Recursive cleanup
+      model.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry?.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach(m => m.dispose());
+          } else {
+            object.material?.dispose();
+          }
+        }
+      });
+    };
+  }, [model]);
+}
+
+// Usage
+function Model() {
+  const model = useRef<THREE.Object3D>(null);
+  useModelCleanup(model.current);
+  return <primitive ref={model} object={loadedModel} />;
+}
+```
+
+## Next.js Type Safety
+
+### Server Components
+```typescript
+// GOOD: Server component type safety
+interface ServerPageProps {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+// Type-safe server action
+async function submitConfig(
+  config: ProductConfiguration,
+  options?: { validate?: boolean }
+): Promise<{ success: boolean; error?: string }> {
+  'use server';
+  
+  try {
+    validateConfig(config);
+    return { success: true };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+```
+
+### API Route Safety
+```typescript
+// GOOD: API route type safety
+import { NextRequest, NextResponse } from 'next/server';
+
+interface ConfigureRequest {
+  productId: string;
+  configuration: ProductConfiguration;
+}
+
+function isConfigureRequest(body: unknown): body is ConfigureRequest {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'productId' in body &&
+    'configuration' in body &&
+    typeof (body as ConfigureRequest).productId === 'string'
+  );
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    if (!isConfigureRequest(body)) {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+    
+    // Process valid request...
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Server error' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## Cross-Cutting Type Safety
+
+### Event Handlers
+```typescript
+// GOOD: Type-safe event handlers
+type ConfigChangeEvent = CustomEvent<{
+  property: keyof ProductConfiguration;
+  value: any;
+  timestamp: number;
+}>;
+
+function isConfigChangeEvent(event: Event): event is ConfigChangeEvent {
+  return (
+    event instanceof CustomEvent &&
+    'property' in event.detail &&
+    'value' in event.detail &&
+    'timestamp' in event.detail
+  );
+}
+
+// Usage
+element.addEventListener('configchange', (event) => {
+  if (isConfigChangeEvent(event)) {
+    handleConfigChange(event.detail);
+  }
+});
+```
+
+### Async Operation Safety
+```typescript
+// GOOD: Type-safe async operations
+interface AsyncOperation<T> {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  data: T | null;
+  error: Error | null;
+}
+
+function createAsyncOperation<T>(): AsyncOperation<T> {
+  return {
+    status: 'idle',
+    data: null,
+    error: null
+  };
+}
+
+// Usage with discriminated unions
+type ConfiguratorState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'error'; error: Error }
+  | { status: 'success'; data: ProductConfiguration };
+```
+
+## Testing Requirements
+
+```typescript
+describe('Advanced Type Safety', () => {
+  it('should handle Medusa product type guard', () => {
+    const invalidProduct = { id: '123' };
+    expect(isMedusaProduct(invalidProduct)).toBe(false);
+    
+    const validProduct = {
+      id: '123',
+      metadata: { configuratorOptions: {} }
+    };
+    expect(isMedusaProduct(validProduct)).toBe(true);
+  });
+  
+  it('should handle async operation state transitions', () => {
+    const operation = createAsyncOperation<ProductConfiguration>();
+    expect(operation.status).toBe('idle');
+    
+    // Test state transitions...
+  });
+});
+```
+
+## Implementation Checklist
+
+- [ ] Integration type guards are implemented
+- [ ] Three.js resources are properly typed and cleaned up
+- [ ] Server component props are fully typed
+- [ ] API routes have request/response type validation
+- [ ] Event handlers use type guards
+- [ ] Async operations use discriminated unions
+- [ ] All type guards have corresponding tests 

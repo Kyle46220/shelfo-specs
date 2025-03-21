@@ -1,0 +1,200 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ # Behavior Map Standards
+
+<rule>
+name: behavior_map_standards
+description: Standardizes the format and content of behavior maps for features and systems
+
+## Structure Requirements
+
+### 1. Core Functionality
+```markdown
+## Core Functionality
+
+### Feature Name
+- **Current Implementation**:
+  - Core behaviors
+  - Main features
+  - Key functionalities
+  
+- **State Management**:
+  - Store structure
+  - State updates
+  - Data flow
+
+- **Component Structure**:
+  - Key components
+  - Component hierarchy
+  - Component interactions
+```
+
+### 2. Technical Implementation
+```markdown
+## Technical Implementation
+
+### Performance Features
+- **Optimizations**:
+  - Performance strategies
+  - Resource management
+  - Loading optimizations
+
+- **Error Handling**:
+  - Error scenarios
+  - Recovery strategies
+  - Fallback behaviors
+
+### Integration Points
+- **External Systems**:
+  - Connected systems
+  - Data flow
+  - API interactions
+
+- **Internal Modules**:
+  - Module dependencies
+  - Event handling
+  - State sharing
+```
+
+### 3. Testing & Coverage
+```markdown
+## Testing & Coverage
+
+### Test Status
+- **Fully Tested**:
+  - [x] Component A
+  - [x] Feature B
+
+- **Partially Tested**:
+  - [ ] Component C (missing edge cases)
+  - [ ] Feature D (incomplete coverage)
+
+- **Untested**:
+  - [ ] Component E
+  - [ ] Feature F
+
+### Edge Cases
+- **Identified Cases**:
+  - Case 1: Description
+  - Case 2: Description
+
+- **Risk Assessment**:
+  - High Risk: Description
+  - Medium Risk: Description
+  - Low Risk: Description
+```
+
+### 4. Next Steps
+```markdown
+## Next Steps
+
+### Immediate Actions
+1. Action item 1
+2. Action item 2
+
+### Future Improvements
+- [ ] Improvement 1
+- [ ] Improvement 2
+
+### Known Issues
+- Issue 1: Description
+- Issue 2: Description
+```
+
+## Usage Guidelines
+
+1. **Completeness**
+   - All sections must be filled out
+   - Use "N/A" for truly non-applicable sections
+   - Include rationale for N/A sections
+
+2. **Clarity**
+   - Use clear, concise language
+   - Provide specific examples
+   - Include measurable criteria
+
+3. **Maintenance**
+   - Update when implementing changes
+   - Review monthly for accuracy
+   - Track changes in git history
+
+4. **Integration**
+   - Link to relevant documentation
+   - Reference related features
+   - Document dependencies
+
+## Examples
+
+### Good Example
+```markdown
+## Core Functionality
+
+### 3D Product Configurator
+- **Current Implementation**:
+  - Real-time 3D rendering with React Three Fiber
+  - Dynamic model loading with progress tracking
+  - Interactive camera controls
+  
+- **State Management**:
+  - Valtio store for configuration state
+  - Computed values for derived state
+  - Persistent configuration storage
+
+- **Component Structure**:
+  - ConfiguratorScene: Main 3D viewport
+  - ConfigPanel: UI controls
+  - ProductModel: 3D model management
+```
+
+### Bad Example
+```markdown
+## Core Functionality
+
+### 3D Viewer
+- Shows 3D models
+- Can customize products
+- Has some controls
+```
+
+## Validation Checks
+
+1. Structure Validation
+   - All main sections present
+   - Proper hierarchy maintained
+   - Consistent formatting
+
+2. Content Validation
+   - Specific details provided
+   - Measurable criteria included
+   - Clear descriptions
+
+3. Integration Validation
+   - Links are valid
+   - References are current
+   - Dependencies are documented
+
+## Required Actions
+
+1. Before Creating
+   - Review existing documentation
+   - Gather technical requirements
+   - Identify stakeholders
+
+2. During Creation
+   - Follow template structure
+   - Include specific examples
+   - Document assumptions
+
+3. After Creation
+   - Validate completeness
+   - Review with team
+   - Update related docs
+
+metadata:
+  version: 1.0
+  priority: high
+  author: Cursor AI
+</rule>

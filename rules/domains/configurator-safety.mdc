@@ -1,0 +1,105 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Safety guidelines specific to the 3D configurator implementation
+globs: **/configurator/**/*.ts, **/configurator/**/*.tsx
+alwaysApply: true
+---
+# Configurator Safety Guidelines
+
+## Type Definitions
+
+```typescript
+// Product Configuration Types
+interface ProductConfiguration {
+  dimensions: Dimensions;
+  appearance: Appearance;
+  features: Features;
+}
+
+interface ConfigurationPreset {
+  id: string;
+  name: string;
+  configuration: ProductConfiguration;
+  thumbnail?: string;
+}
+
+// UI State Types
+interface ConfiguratorUIState {
+  activeTab: string | null;
+  hoveredPart: string | null;
+  error: string | null;
+  isLoading: boolean;
+}
+```
+
+## Value Processing
+
+```typescript
+// GOOD: Safe preset handling
+function applyPreset(preset: ConfigurationPreset | null) {
+  if (!preset?.configuration) {
+    console.warn('Invalid preset configuration');
+    return;
+  }
+  
+  store.actions.updateConfiguration(preset.configuration);
+}
+
+// GOOD: Safe dimension updates
+function updateDimensions(dimensions: Partial<Dimensions>) {
+  const current = store.config?.dimensions ?? defaultDimensions;
+  store.actions.setDimensions({
+    ...current,
+    ...dimensions
+  });
+}
+```
+
+## Error Handling
+
+```typescript
+// GOOD: Configurator-specific error handling
+function handleConfigurationError(error: unknown) {
+  const errorMessage = error instanceof Error 
+    ? error.message 
+    : 'An error occurred while updating the configuration';
+    
+  store.ui.error = errorMessage;
+  store.ui.isLoading = false;
+}
+```
+
+## Testing Requirements
+
+```typescript
+describe('Configurator', () => {
+  it('should handle invalid configurations', () => {
+    const invalidConfig = {};
+    expect(() => 
+      store.actions.updateConfiguration(invalidConfig)
+    ).not.toThrow();
+  });
+  
+  it('should maintain state consistency', () => {
+    store.actions.setDimensions({ width: 100 });
+    expect(store.config.dimensions).toMatchObject({
+      width: 100,
+      height: expect.any(Number),
+      depth: expect.any(Number)
+    });
+  });
+});
+```
+
+## Implementation Checklist
+
+- [ ] All configurator types are defined
+- [ ] Preset handling includes null checks
+- [ ] Dimension updates preserve existing values
+- [ ] Error handling is specific to configurator context
+- [ ] State consistency is maintained
+- [ ] All edge cases are tested

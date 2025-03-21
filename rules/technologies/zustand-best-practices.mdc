@@ -1,0 +1,23 @@
+---
+description: DEPRECATED - Project has transitioned to Valtio for state management
+globs: 
+alwaysApply: false
+---
+---
+name: zustand-best-practices.mdc
+description: DEPRECATED - Project has transitioned to Valtio for state management
+globs: **/*.{ts,tsx}
+---
+
+# DEPRECATED: Zustand State Management
+
+This project haZustand to Valtio for state mane following resources for current state management guidelines:
+- [valtio-patterns.mdc](.cursor/rules/technologies/valtio-patterns.mdc) - Patterns for using Valtio
+- [state-management-update.mdc](.cursor/rules/technologies/state-management-update.mdc) - Updated state management guidelines
+
+## Transition Notes:
+- Update all imports from Zustand to Valtio
+- Replace `create` calls with Valtio's `proxy`
+- Use `useSnapshot` instead of the custom hooks
+- Direct mutations are used instead of setState functions
+- Middleware is replaced with Valtio's utilities

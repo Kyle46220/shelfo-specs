@@ -1,0 +1,136 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ ---
+description: |
+  Enforces Next.js project structure standards to maintain consistent file organization and prevent root directory pollution.
+  All source code must be placed in the src directory, with clear organization for pages, components, and tests.
+globs:
+  - "**/*.{ts,tsx,js,jsx}"
+  - "**/*.test.{ts,tsx,js,jsx}"
+  - "**/*.feature"
+alwaysApply: true
+---
+
+<rule>enforce_nextjs_structure>
+
+# Description
+This rule ensures that all Next.js project files follow the standard directory structure, with source code properly organized within the src directory. It prevents file creation in incorrect locations and provides guidance for proper file organization.
+
+# Filters
+<filters>
+  events:
+    - file.create
+    - file.move
+    - file.modify
+  paths:
+    - "**/*.{ts,tsx,js,jsx}"
+    - "**/*.test.{ts,tsx,js,jsx}"
+    - "**/*.feature"
+  intents:
+    - create_component
+    - create_page
+    - create_test
+    - create_feature
+    - move_file
+</filters>
+
+# Actions
+<actions>
+  validate:
+    conditions:
+      - description: "Ensure source files are in src directory"
+        pattern: "^src/.*\\.(ts|tsx|js|jsx)$"
+        error: "Source files must be placed in the src directory"
+      
+      - description: "Ensure pages are in correct Next.js app directory"
+        pattern: "^src/app/.*/(page|layout|loading|error)\\.(ts|tsx|js|jsx)$"
+        error: "Next.js page files must be in src/app directory with correct naming"
+      
+      - description: "Ensure components are properly organized"
+        pattern: "^src/components/.*\\.(ts|tsx|js|jsx)$"
+        error: "Components should be placed in src/components directory"
+      
+      - description: "Ensure tests are co-located with implementation"
+        pattern: "^src/.*\\.test\\.(ts|tsx|js|jsx)$"
+        error: "Test files should be co-located with their implementation in src directory"
+      
+      - description: "Ensure feature files are in correct location"
+        pattern: "^src/features/.*\\.feature$"
+        error: "Feature files must be placed in src/features directory"
+
+  reject:
+    message: |
+      File location violates Next.js project structure standards.
+      Please ensure:
+      1. All source code is in the src directory
+      2. Pages are in src/app
+      3. Components are in src/components
+      4. Tests are co-located with implementation
+      5. Features are in src/features
+
+  suggest:
+    message: |
+      Recommended directory structure:
+      ```
+      src/
+      ├── app/                    # Next.js app router pages
+      │   ├── layout.tsx         # Root layout
+      │   ├── page.tsx          # Home page
+      │   └── [route]/          # Dynamic routes
+      ├── components/            # Reusable components
+      │   └── [ComponentName]/   # Component with tests
+      ├── features/             # Feature files
+      ├── lib/                  # Utilities and helpers
+      ├── styles/              # Global styles
+      └── types/               # TypeScript types
+      ```
+
+  analyze:
+    checklist:
+      - "File is in correct directory based on its type"
+      - "Directory structure follows Next.js conventions"
+      - "Tests are properly co-located"
+      - "Feature files are in features directory"
+      - "No source files in root directory"
+</actions>
+
+# Examples
+<examples>
+  valid:
+    - file: "src/app/page.tsx"
+      description: "Next.js page in correct location"
+
+    - file: "src/components/Button/Button.tsx"
+      description: "Component in components directory"
+
+    - file: "src/components/Button/Button.test.tsx"
+      description: "Co-located test file"
+
+    - file: "src/features/auth.feature"
+      description: "Feature file in features directory"
+
+  invalid:
+    - file: "pages/index.tsx"
+      error: "Pages should be in src/app directory"
+
+    - file: "components/Button.tsx"
+      error: "Components should be in src/components directory"
+
+    - file: "Button.test.tsx"
+      error: "Test files should be co-located with implementation in src directory"
+</examples>
+
+# Metadata
+<metadata>
+  version: 1.0.0
+  priority: high
+  category: project-structure
+  dependencies:
+    - nextjs-best-practices
+    - typescript-guidelines
+</metadata>
+
+</rule>

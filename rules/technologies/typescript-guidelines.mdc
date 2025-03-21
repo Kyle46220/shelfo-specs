@@ -1,0 +1,28 @@
+---
+description: TypeScript coding standards and best practices for the project
+globs: **/*.tsx,**/*.ts
+alwaysApply: false
+---
+---
+name: Typescript-guidelines
+description: TypeScript coding standards and type safety guidelines
+---
+
+# TypeScript Guidelines
+
+When working with TypeScript files in this project, follow these guidelines:
+
+- Use strict typing, avoid 'any' type
+- Follow SOLID principles
+- Write interfaces for all component props
+- Use proper JSDoc comments for documentation
+- Write unit tests for all components and hooks
+- Prefer functional components with hooks over class components
+- Keep files small and focused (<200 lines)
+- Use descriptive variable names with proper types 
+
+- Enable strict mode in tsconfig.json for enhanced type checking.
+- Use generics for reusable components and functions.
+- Implement type guards for runtime type checking.
+- Utilize utility types like `Partial`, `Readonly`, and `Pick` for type manipulation.
+

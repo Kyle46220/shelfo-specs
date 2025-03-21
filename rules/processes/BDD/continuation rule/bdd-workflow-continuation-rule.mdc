@@ -1,0 +1,110 @@
+---
+description: Rule for continuing BDD workflow across multiple sessions
+globs: **/*.feature,**/*.steps.ts,**/*.test.ts
+alwaysApply: false
+---
+
+# BDD Workflow Continuation Rule
+
+## Purpose
+This rule enables resuming the BDD workflow from specific checkpoints across multiple chat sessions, preserving context and avoiding duplication of completed work.
+
+<rule>
+name: bdd_workflow_continuation
+description: Manages the continuation of BDD workflows across multiple sessions
+filters:
+  - type: content
+    pattern: "(?i)continue bdd (workflow|process) for .*"
+  - type: intent
+    pattern: "workflow_continuation"
+
+actions:
+  - type: execute
+    command: "node scripts/bdd-status-script.js"
+    onSuccess:
+      - type: suggest
+        message: |
+          BDD workflow status report generated. Current progress:
+          {{output}}
+
+  - type: suggest
+    message: |
+      ## BDD Workflow Continuation
+
+      To resume the BDD workflow, I need to:
+
+      1. **Load current context** from:
+         - Story: `stories/{{story_file}}`
+         - Feature: `features/{{feature_file}}`
+         - Steps: `features/{{steps_file}}`
+         - Implementation: `src/{{implementation_file}}`
+         - Tests: `src/{{test_file}}`
+
+      2. **Determine current stage** in the workflow:
+         - [ ] 1. Story Creation (Complete)
+         - [ ] 2. Feature Creation (Complete)
+         - [ ] 3. Steps Definition (Complete)
+         - [ ] 4. BDD Implementation (In Progress)
+         - [ ] 5. Unit Testing (Not Started)
+         - [ ] 6. Scenario Completion (Not Started)
+         - [ ] 7. Feature Documentation (Not Started)
+
+      3. **Resume from current checkpoint**: {{current_checkpoint}}
+
+      **Note:** Relevant acceptance criteria and previous implementation details will be preserved.
+</rule>
+
+## Workflow Checkpoints
+
+The BDD workflow can be resumed from the following checkpoints:
+
+1. **After Story Creation**:
+   - Has completed user story document
+   - Ready to create feature file
+
+2. **After Feature Creation**:
+   - Has feature file with scenarios
+   - Ready to define steps
+
+3. **After Steps Definition**:
+   - Has step definitions created
+   - Ready to implement functionality
+
+4. **During BDD Implementation**:
+   - Has partial implementation
+   - Tests may be failing
+   - Need to continue implementation or fix issues
+
+5. **During Unit Testing**:
+   - BDD tests passing
+   - Unit tests in progress or failing
+   - Need to refine implementation
+
+6. **After Test Completion**:
+   - All tests passing
+   - Ready for scenario completion and documentation
+
+## Implementation Notes
+
+This rule works with a companion script (`scripts/bdd-status-script.js`) that:
+
+1. Scans the project for relevant BDD artifacts
+2. Determines the current progress based on file existence and test status
+3. Generates a status report with file paths and completion status
+4. Identifies the appropriate checkpoint to resume from
+
+To use this rule:
+1. Type "Continue BDD workflow for [feature name]" in a new chat session
+2. The rule will analyze the project state and provide a continuation point
+3. All relevant context will be loaded for seamless continuation
+
+## Additional Actions
+
+When resuming a workflow, the following actions should be taken:
+
+1. Re-read the user story and acceptance criteria
+2. Review the current implementation and test status
+3. Resume implementation from the identified checkpoint
+4. Focus on completing the current BDD workflow stage
+
+Note: This rule will not automatically update tasks.md or status.md files. You can handle those updates manually at your convenience.

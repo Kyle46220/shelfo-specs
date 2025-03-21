@@ -1,0 +1,101 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# State Management Safety Guidelines
+
+---
+description: Safety guidelines for state management with Valtio
+globs: **/store/**/*.ts, **/store/**/*.tsx
+alwaysApply: true
+---
+
+## Store Initialization
+
+```typescript
+// GOOD: Complete store type definition
+interface Store {
+  data: Data | null;
+  ui: {
+    isLoading: boolean;
+    error: string | null;
+  };
+  actions: StoreActions;
+}
+
+// GOOD: Safe store initialization
+const store = proxy<Store>({
+  data: null,
+  ui: {
+    isLoading: false,
+    error: null
+  },
+  actions: {
+    // Action implementations
+  }
+});
+```
+
+## Value Extraction
+
+```typescript
+// GOOD: Safe value extraction
+function extractValue<T>(obj: unknown): T | null {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj === 'object' && 'value' in obj) {
+    return (obj as { value: T }).value;
+  }
+  return obj as T;
+}
+
+// Usage
+const value = extractValue<string>(someObject);
+```
+
+## Null Checks
+
+```typescript
+// GOOD: Thorough null checking
+function getConfig() {
+  const snap = useSnapshot(store);
+  return snap.config ?? getInitialConfig();
+}
+
+// BAD: Missing null checks
+function getConfig() {
+  const snap = useSnapshot(store);
+  return snap.config; // Might be null
+}
+```
+
+## Action Implementation
+
+```typescript
+// GOOD: Type-safe actions
+interface StoreActions {
+  setData: (data: Data) => void;
+  clearError: () => void;
+}
+
+const actions: StoreActions = {
+  setData: (data) => {
+    store.data = data;
+  },
+  clearError: () => {
+    store.ui.error = null;
+  }
+};
+```
+
+## Testing Requirements
+
+```typescript
+describe('Store', () => {
+  it('should handle null values safely', () => {
+    const store = createTestStore();
+    store.data = null;
+    expect(() => store.actions.processData()).not.toThrow();
+  });
+});
+``` 
