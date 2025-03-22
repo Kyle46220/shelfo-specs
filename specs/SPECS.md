@@ -12,6 +12,7 @@ This document serves as the master specification for the Shelfo 3D furniture con
 - Component-based architecture for product composition
 - Style and material selection
 - Dimension adjustments with manufacturing constraints
+- Comprehensive debugging system for R3F components
 
 ### 2. Product Registry System
 - Type-based product definition system using discriminated union pattern
@@ -41,6 +42,7 @@ This document serves as the master specification for the Shelfo 3D furniture con
 - TypeScript for type safety with discriminated union patterns
 - Tailwind CSS for styling
 - Shadcn components for UI elements
+- R3F debugging tools for scene inspection and testing
 
 ### Backend
 - Simple backend with RESTful API endpoints
@@ -52,13 +54,14 @@ This document serves as the master specification for the Shelfo 3D furniture con
 
 ### MVP Phase (Current)
 1. Flexible type system implementation
-2. Bookcase configurator core functionality 
-3. Table configurator core functionality
-4. Basic preset selection
-5. Style and material configuration
-6. Component-based customization
-7. Frontend pricing calculation
-8. Cart integration
+2. R3F debugging system implementation
+3. Bookcase configurator core functionality 
+4. Table configurator core functionality
+5. Basic preset selection
+6. Style and material configuration
+7. Component-based customization
+8. Frontend pricing calculation
+9. Cart integration
 
 ### Phase 2
 1. User configuration saving
@@ -80,6 +83,7 @@ This document serves as the master specification for the Shelfo 3D furniture con
 - WebGL compatibility across browsers
 - State management complexity with polymorphic product types
 - Database structure for product configurations
+- Debugging capabilities in production environments
 
 ## Performance Targets
 - Initial load: < 3s on desktop, < 5s on mobile
@@ -102,6 +106,7 @@ This document serves as the master specification for the Shelfo 3D furniture con
 - [Business Requirements](./business-requirements.specs.md)
 - [State Management](./state-management/valtio-state.specs.md)
 - [UI Components](./ui/ui-components.specs.md)
+- [R3F Debugging System](./r3f-debugging.specs.md)
 
 ## Success Criteria
 The MVP will be considered successful when:
@@ -112,3 +117,6 @@ The MVP will be considered successful when:
 5. The 3D visualization accurately represents the final product
 6. Mobile users can use all configurator features
 7. User configurations can be saved and retrieved
+8. The debugging system enables effective troubleshooting of 3D components
+9. AI agents can effectively debug and modify R3F components without direct visual feedback
+10. Scene state can be captured and analyzed for testing and verification

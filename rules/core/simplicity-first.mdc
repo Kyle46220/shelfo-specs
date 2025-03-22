@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 # Simplicity-First Principle
 
-## Overview
+## Overview 
 The simplicity-first principle guides all development decisions in the Shelfo configurator project. This rule ensures that implementations remain straightforward, maintainable, and accessible for junior developers.
 
 ## Core Guidelines
